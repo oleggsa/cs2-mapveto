@@ -38,7 +38,22 @@ export function UserBadge({ profile }: Props) {
       </button>
       {open && (
         <div className="user-badge-menu">
-          <button className="user-badge-logout" onClick={logout}>
+          <a className="user-badge-menu-header" href={`#/player/${profile.id}`} onClick={() => setOpen(false)}>
+            <span className="avatar-wrap">
+              {profile.avatar_url ? (
+                <img className="user-badge-avatar" src={profile.avatar_url} alt="" />
+              ) : (
+                <span className="user-badge-avatar" />
+              )}
+              <FaceitBadge level={profile.faceit_level} elo={profile.faceit_elo} />
+            </span>
+            <span>
+              <span className="user-badge-menu-name">{profile.name}</span>
+              <span className="user-badge-menu-link">Открыть профиль</span>
+            </span>
+          </a>
+          <div className="user-badge-menu-divider" />
+          <button className="user-badge-menu-item user-badge-logout" onClick={logout}>
             Выйти
           </button>
         </div>

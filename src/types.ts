@@ -33,6 +33,10 @@ export interface MatchListItem extends Match {
   filled: number
 }
 
+export interface PlayerMatchItem extends Match {
+  myTeam: Team
+}
+
 export interface MatchPlayer {
   match_id: string
   team: Team

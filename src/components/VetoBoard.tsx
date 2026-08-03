@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { mapByCode } from '../config/mapPool'
 import { teamLabel, teamSuffix } from '../lib/teamNames'
+import { PlayerLink } from './PlayerLink'
 import type { Match, MatchPlayer, MatchRound, MatchVote, Profile, Team } from '../types'
 
 interface Props {
@@ -120,7 +121,7 @@ export function VetoBoard({ match, players, rounds, votes, me, onChanged }: Prop
           return (
             <div key={m.slot} className="roster-row">
               <span className={`roster-dot ${done && activeRound?.team === team ? 'roster-dot--voted' : ''}`} />
-              <span>{m.profile?.name ?? '—'}</span>
+              <PlayerLink playerId={m.player_id}>{m.profile?.name ?? '—'}</PlayerLink>
               {activeRound && activeRound.team === team && activeRound.pick_count > 1 && m.player_id && (
                 <span className="roster-progress">
                   {memberVotes}/{activeRound.pick_count}

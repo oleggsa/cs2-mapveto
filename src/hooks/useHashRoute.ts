@@ -24,3 +24,8 @@ export function matchRoomPath(path: string): string | null {
   const m = path.match(/^\/room\/([^/]+)$/)
   return m ? m[1] : null
 }
+
+export function matchPlayerPath(path: string): string | null {
+  const m = path.match(/^\/player\/([^/]+)$/)
+  return m ? m[1] : null
+}

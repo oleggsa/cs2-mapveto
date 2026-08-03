@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { isPrivileged } from '../lib/permissions'
 import { teamSuffix } from '../lib/teamNames'
 import { FaceitBadge } from './FaceitBadge'
+import { PlayerLink } from './PlayerLink'
 import type { Match, MatchPlayer, Profile, Team } from '../types'
 
 interface Props {
@@ -102,15 +103,17 @@ export function Lobby({ match, players, me, onChanged }: Props) {
             >
               {slot.player_id ? (
                 <>
-                  <span className="avatar-wrap">
-                    {slot.profile?.avatar_url ? (
-                      <img className="slot-avatar" src={slot.profile.avatar_url} alt="" />
-                    ) : (
-                      <span className="slot-avatar" />
-                    )}
-                    <FaceitBadge level={slot.profile?.faceit_level} elo={slot.profile?.faceit_elo} />
-                  </span>
-                  <span className="slot-name">{slot.profile?.name ?? '…'}</span>
+                  <PlayerLink playerId={slot.player_id} className="slot-player-link">
+                    <span className="avatar-wrap">
+                      {slot.profile?.avatar_url ? (
+                        <img className="slot-avatar" src={slot.profile.avatar_url} alt="" />
+                      ) : (
+                        <span className="slot-avatar" />
+                      )}
+                      <FaceitBadge level={slot.profile?.faceit_level} elo={slot.profile?.faceit_elo} />
+                    </span>
+                    <span className="slot-name">{slot.profile?.name ?? '…'}</span>
+                  </PlayerLink>
                   {isMine && (
                     <button className="slot-action" onClick={leave}>
                       Выйти

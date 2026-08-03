@@ -1,7 +1,8 @@
 import { useSession } from './hooks/useSession'
-import { useHashRoute, matchRoomPath } from './hooks/useHashRoute'
+import { useHashRoute, matchRoomPath, matchPlayerPath } from './hooks/useHashRoute'
 import { Home } from './pages/Home'
 import { Room } from './pages/Room'
+import { Player } from './pages/Player'
 import { UserBadge } from './components/UserBadge'
 import './App.css'
 
@@ -10,11 +11,12 @@ export default function App() {
   const { session, profile, loading } = useSession()
 
   const roomId = matchRoomPath(path)
+  const playerId = matchPlayerPath(path)
 
   return (
     <>
       {profile && <UserBadge profile={profile} />}
-      {roomId && (
+      {(roomId || playerId) && (
         <button className="home-btn" onClick={() => navigate('/')} title="На главную">
           ← Главная
         </button>
@@ -27,6 +29,8 @@ export default function App() {
           sessionLoading={loading}
           onLeftRoom={() => navigate('/')}
         />
+      ) : playerId ? (
+        <Player playerId={playerId} />
       ) : (
         <Home session={session} profile={profile} onCreated={(id) => navigate(`/room/${id}`)} />
       )}
