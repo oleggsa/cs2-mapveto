@@ -14,7 +14,7 @@ export const MAP_POOL: MapDef[] = [
   { code: 'de_inferno', name: 'Inferno', image: '/maps/inferno.jpg' },
   { code: 'de_mirage', name: 'Mirage', image: '/maps/mirage.jpg' },
   { code: 'de_nuke', name: 'Nuke', image: '/maps/nuke.jpg' },
-  { code: 'de_vertigo', name: 'Vertigo', image: '/maps/vertigo.jpg' },
+  { code: 'de_cache', name: 'Cache', image: '/maps/cache.jpg' },
 ]
 
 export const MAP_POOL_CODES = MAP_POOL.map((m) => m.code)
@@ -22,5 +22,3 @@ export const MAP_POOL_CODES = MAP_POOL.map((m) => m.code)
 export function mapByCode(code: string): MapDef | undefined {
   return MAP_POOL.find((m) => m.code === code)
 }
-
-export const ROUND_SECONDS = 25

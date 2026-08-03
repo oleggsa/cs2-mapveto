@@ -1,35 +1,104 @@
+import { useState } from 'react'
 import { supabase } from '../lib/supabase'
-import type { MatchPlayer, Profile, Team } from '../types'
+import { isPrivileged } from '../lib/permissions'
+import { teamSuffix } from '../lib/teamNames'
+import type { Match, MatchPlayer, Profile, Team } from '../types'
 
 interface Props {
-  matchId: string
+  match: Match
   players: MatchPlayer[]
   me: Profile
+  onChanged: () => void
 }
 
-export function Lobby({ matchId, players, me }: Props) {
-  const mySlot = players.find((p) => p.player_id === me.id)
+export function Lobby({ match, players, me, onChanged }: Props) {
   const filled = players.filter((p) => p.player_id).length
+  const isHost = isPrivileged(match, me)
+
+  const [editingTeam, setEditingTeam] = useState<Team | null>(null)
+  const [teamNameInput, setTeamNameInput] = useState('')
 
   async function join(team: Team, slot: number) {
-    const { error } = await supabase.rpc('join_slot', { p_match_id: matchId, p_team: team, p_slot: slot })
+    const { error } = await supabase.rpc('join_slot', { p_match_id: match.id, p_team: team, p_slot: slot })
     if (error) console.error(error)
+    else onChanged()
   }
 
   async function leave() {
-    const { error } = await supabase.rpc('leave_slot', { p_match_id: matchId })
+    const { error } = await supabase.rpc('leave_slot', { p_match_id: match.id })
     if (error) console.error(error)
+    else onChanged()
   }
 
-  function renderTeam(team: Team, label: string) {
+  async function kick(team: Team, slot: number) {
+    const { error } = await supabase.rpc('kick_player', { p_match_id: match.id, p_team: team, p_slot: slot })
+    if (error) console.error(error)
+    else onChanged()
+  }
+
+  async function startVeto() {
+    const { error } = await supabase.rpc('start_veto', { p_match_id: match.id })
+    if (error) console.error(error)
+    else onChanged()
+  }
+
+  function startEditingTeam(team: Team) {
+    setTeamNameInput(teamSuffix(match, team))
+    setEditingTeam(team)
+  }
+
+  async function saveTeamName(team: Team) {
+    const { error } = await supabase.rpc('rename_team', {
+      p_match_id: match.id,
+      p_team: team,
+      p_name: teamNameInput,
+    })
+    if (error) console.error(error)
+    else onChanged()
+    setEditingTeam(null)
+  }
+
+  function renderTeam(team: Team) {
     const slots = players.filter((p) => p.team === team).sort((a, b) => a.slot - b.slot)
     return (
       <div className={`team-column team-column--${team.toLowerCase()}`}>
-        <h2>{label}</h2>
+        {editingTeam === team ? (
+          <div className="team-name-edit">
+            <input
+              className="text-input team-name-input"
+              value={teamNameInput}
+              onChange={(e) => setTeamNameInput(e.target.value)}
+              maxLength={40}
+              autoFocus
+            />
+            <button className="btn btn-sm" onClick={() => saveTeamName(team)}>
+              Сохранить
+            </button>
+            <button className="btn btn-sm" onClick={() => setEditingTeam(null)}>
+              Отмена
+            </button>
+          </div>
+        ) : (
+          <h2>
+            Команда {teamSuffix(match, team)}
+            {isHost && (
+              <button className="icon-btn" onClick={() => startEditingTeam(team)} title="Переименовать команду">
+                ✎
+              </button>
+            )}
+          </h2>
+        )}
+
         {slots.map((slot) => {
           const isMine = slot.player_id === me.id
+          const isEmpty = !slot.player_id
+
           return (
-            <div key={slot.slot} className={`slot ${isMine ? 'slot--mine' : ''}`}>
+            <div
+              key={slot.slot}
+              className={`slot ${isMine ? 'slot--mine' : ''} ${isEmpty ? 'slot--joinable' : ''}`}
+              onClick={isEmpty ? () => join(team, slot.slot) : undefined}
+            >
               {slot.player_id ? (
                 <>
                   {slot.profile?.avatar_url ? (
@@ -39,24 +108,25 @@ export function Lobby({ matchId, players, me }: Props) {
                   )}
                   <span className="slot-name">{slot.profile?.name ?? '…'}</span>
                   {isMine && (
-                    <button
-                      className="btn"
-                      style={{ marginLeft: 'auto', padding: '4px 10px' }}
-                      onClick={leave}
-                    >
+                    <button className="slot-action" onClick={leave}>
                       Выйти
+                    </button>
+                  )}
+                  {!isMine && isHost && (
+                    <button
+                      className="slot-action slot-action--kick"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        kick(team, slot.slot)
+                      }}
+                      title="Удалить из лобби"
+                    >
+                      ✕
                     </button>
                   )}
                 </>
               ) : (
-                <button
-                  className="slot-plus"
-                  disabled={!!mySlot}
-                  onClick={() => join(team, slot.slot)}
-                  title="Присоединиться"
-                >
-                  +
-                </button>
+                <span className="slot-plus">+</span>
               )}
             </div>
           )
@@ -68,10 +138,23 @@ export function Lobby({ matchId, players, me }: Props) {
   return (
     <>
       <div className="lobby">
-        {renderTeam('A', 'Команда A')}
-        {renderTeam('B', 'Команда B')}
+        {renderTeam('A')}
+        {renderTeam('B')}
       </div>
-      <p className="lobby-hint">{filled}/10 — вето начнётся автоматически, когда заполнятся все слоты</p>
+
+      {filled < 10 && (
+        <p className="lobby-hint">{filled}/10 — для старта вето нужно заполнить все слоты</p>
+      )}
+      {(filled === 10 || me.is_admin) && isHost && (
+        <div className="lobby-hint">
+          <button className="btn btn-primary" onClick={startVeto}>
+            {filled === 10 ? 'Начать голосование' : 'Начать голосование (админ, неполный состав)'}
+          </button>
+        </div>
+      )}
+      {filled === 10 && !isHost && (
+        <p className="lobby-hint">Все слоты заполнены — ждём, когда хост начнёт голосование</p>
+      )}
     </>
   )
 }

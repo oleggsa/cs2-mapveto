@@ -13,5 +13,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 export function steamAuthUrl(roomId: string): string {
   const url = new URL(`${supabaseUrl}/functions/v1/steam-auth`)
   if (roomId) url.searchParams.set('room', roomId)
+  // Tells the edge function where to bounce back to after Steam login — lets
+  // this work from localhost during development, not just the deployed site.
+  url.searchParams.set('dest', window.location.origin + import.meta.env.BASE_URL)
   return url.toString()
 }

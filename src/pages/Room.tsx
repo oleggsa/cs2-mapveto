@@ -3,6 +3,7 @@ import { useMatch } from '../hooks/useMatch'
 import { Lobby } from '../components/Lobby'
 import { VetoBoard } from '../components/VetoBoard'
 import { ResultScreen } from '../components/ResultScreen'
+import { RoomHeader } from '../components/RoomHeader'
 import { steamAuthUrl } from '../lib/supabase'
 import type { Profile } from '../types'
 
@@ -11,10 +12,11 @@ interface Props {
   session: Session | null
   profile: Profile | null
   sessionLoading: boolean
+  onLeftRoom: () => void
 }
 
-export function Room({ roomId, session, profile, sessionLoading }: Props) {
-  const { match, players, rounds, votes, loading } = useMatch(roomId)
+export function Room({ roomId, session, profile, sessionLoading, onLeftRoom }: Props) {
+  const { match, players, rounds, votes, loading, refetch } = useMatch(roomId)
 
   if (loading || sessionLoading) {
     return (
@@ -46,16 +48,15 @@ export function Room({ roomId, session, profile, sessionLoading }: Props) {
 
   return (
     <div className="page">
-      <div className="room-header">
-        <h1>Матч #{roomId.slice(0, 8)}</h1>
-        <span className="room-link">{window.location.href}</span>
-      </div>
+      <RoomHeader match={match} me={profile} roomId={roomId} onDeleted={onLeftRoom} onChanged={refetch} />
 
-      {match.status === 'lobby' && <Lobby matchId={roomId} players={players} me={profile} />}
-      {match.status === 'veto' && (
-        <VetoBoard match={match} players={players} rounds={rounds} votes={votes} me={profile} />
+      {match.status === 'lobby' && (
+        <Lobby match={match} players={players} me={profile} onChanged={refetch} />
       )}
-      {match.status === 'done' && <ResultScreen match={match} />}
+      {match.status === 'veto' && (
+        <VetoBoard match={match} players={players} rounds={rounds} votes={votes} me={profile} onChanged={refetch} />
+      )}
+      {match.status === 'done' && <ResultScreen match={match} me={profile} onChanged={refetch} />}
     </div>
   )
 }

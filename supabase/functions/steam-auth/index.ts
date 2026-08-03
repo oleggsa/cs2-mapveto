@@ -21,22 +21,34 @@ const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
-function functionBaseUrl(req: Request): string {
-  const u = new URL(req.url);
-  return `${u.protocol}//${u.host}${u.pathname}`;
+// req.url inside a Supabase Edge Function reflects an internal rewritten
+// request (http://, and missing the /functions/v1/<name> prefix) rather than
+// the public URL the browser actually hit — so the base must come from the
+// SUPABASE_URL secret, never from req.url.
+const FUNCTION_BASE_URL = `${SUPABASE_URL}/functions/v1/steam-auth`;
+
+// The client tells us where it's running (production site, or a localhost dev
+// server) via ?dest=. Only ever redirect a session token back to an origin we
+// explicitly trust — otherwise fall back to the production SITE_URL secret.
+function resolveDest(rawDest: string | null): string {
+  if (!rawDest) return SITE_URL;
+  if (rawDest === SITE_URL) return rawDest;
+  if (/^https?:\/\/localhost:\d+\/?$/.test(rawDest)) return rawDest;
+  return SITE_URL;
 }
 
 function handleLogin(req: Request): Response {
   const url = new URL(req.url);
   const room = url.searchParams.get("room") ?? "";
-  const base = functionBaseUrl(req);
-  const returnTo = `${base}?step=callback&room=${encodeURIComponent(room)}`;
+  const dest = resolveDest(url.searchParams.get("dest"));
+  const returnTo =
+    `${FUNCTION_BASE_URL}?step=callback&room=${encodeURIComponent(room)}&dest=${encodeURIComponent(dest)}`;
 
   const params = new URLSearchParams({
     "openid.ns": "http://specs.openid.net/auth/2.0",
     "openid.mode": "checkid_setup",
     "openid.return_to": returnTo,
-    "openid.realm": `${url.protocol}//${url.host}`,
+    "openid.realm": new URL(SUPABASE_URL).origin,
     "openid.identity": "http://specs.openid.net/auth/2.0/identifier_select",
     "openid.claimed_id": "http://specs.openid.net/auth/2.0/identifier_select",
   });
@@ -79,6 +91,7 @@ async function fetchSteamProfile(steamId: string): Promise<{ name: string; avata
 async function handleCallback(req: Request): Promise<Response> {
   const url = new URL(req.url);
   const room = url.searchParams.get("room") ?? "";
+  const dest = resolveDest(url.searchParams.get("dest"));
 
   let steamId: string;
   try {
@@ -126,7 +139,7 @@ async function handleCallback(req: Request): Promise<Response> {
     return new Response(`could not create session link: ${linkErr?.message}`, { status: 500 });
   }
 
-  const redirectUrl = new URL(SITE_URL);
+  const redirectUrl = new URL(dest);
   redirectUrl.searchParams.set("token_hash", linkData.properties.hashed_token);
   redirectUrl.searchParams.set("type", "magiclink");
   redirectUrl.hash = room ? `/room/${room}` : "/";

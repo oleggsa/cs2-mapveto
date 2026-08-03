@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { mapByCode } from '../config/mapPool'
+import { teamLabel, teamSuffix } from '../lib/teamNames'
 import type { Match, MatchPlayer, MatchRound, MatchVote, Profile, Team } from '../types'
 
 interface Props {
@@ -9,18 +10,21 @@ interface Props {
   rounds: MatchRound[]
   votes: MatchVote[]
   me: Profile
+  onChanged: () => void
 }
 
-const STAGES = [
-  { label: 'Бан A ×2', from: 1, to: 2 },
-  { label: 'Бан B ×3', from: 3, to: 5 },
-  { label: 'Пик карты A', from: 6, to: 6 },
-  { label: 'Пик стороны B', from: 7, to: 7 },
-]
+function stages(match: Match) {
+  return [
+    { label: `Бан ${teamSuffix(match, 'A')} ×2`, no: 1 },
+    { label: `Бан ${teamSuffix(match, 'B')} ×3`, no: 2 },
+    { label: `Пик карты ${teamSuffix(match, 'A')}`, no: 3 },
+    { label: `Пик стороны ${teamSuffix(match, 'B')}`, no: 4 },
+  ]
+}
 
-function stageStatus(round_no: number, from: number, to: number) {
-  if (round_no > to) return 'done'
-  if (round_no >= from && round_no <= to) return 'active'
+function stageStatus(activeRoundNo: number, stageNo: number) {
+  if (activeRoundNo > stageNo) return 'done'
+  if (activeRoundNo === stageNo) return 'active'
   return 'upcoming'
 }
 
@@ -39,7 +43,7 @@ function useCountdown(deadline: string) {
   return secondsLeft
 }
 
-export function VetoBoard({ match, players, rounds, votes, me }: Props) {
+export function VetoBoard({ match, players, rounds, votes, me, onChanged }: Props) {
   const activeRound = rounds.find((r) => !r.resolved)
   const secondsLeft = useCountdown(activeRound?.deadline ?? new Date().toISOString())
   const resolvedFor = useRef<string | null>(null)
@@ -51,17 +55,19 @@ export function VetoBoard({ match, players, rounds, votes, me }: Props) {
     resolvedFor.current = activeRound.id
     supabase.rpc('resolve_round', { p_round_id: activeRound.id }).then(({ error }) => {
       if (error) console.error(error)
+      onChanged()
     })
-  }, [activeRound, secondsLeft])
+  }, [activeRound, secondsLeft, onChanged])
 
-  const bannedMaps = new Set(
-    rounds.filter((r) => r.kind === 'ban' && r.resolved && r.result).map((r) => r.result as string),
-  )
-  const pickedMap = rounds.find((r) => r.kind === 'pick_map' && r.resolved)?.result ?? null
+  const bannedMaps = new Set(rounds.filter((r) => r.kind === 'ban' && r.resolved).flatMap((r) => r.results))
+  const pickedMap = rounds.find((r) => r.kind === 'pick_map' && r.resolved)?.results?.[0] ?? null
 
-  const myVoteForActiveRound = activeRound
-    ? votes.find((v) => v.round_id === activeRound.id && v.player_id === me.id)
-    : undefined
+  const myVotesForActiveRound = activeRound
+    ? votes.filter((v) => v.round_id === activeRound.id && v.player_id === me.id)
+    : []
+  const myChoices = new Set(myVotesForActiveRound.map((v) => v.choice))
+  const remainingPicks = activeRound ? activeRound.pick_count - myVotesForActiveRound.length : 0
+  const canPickMore = !!activeRound && (remainingPicks > 0 || activeRound.pick_count === 1)
   const iAmActingTeam =
     !!activeRound && players.some((p) => p.team === activeRound.team && p.player_id === me.id)
 
@@ -69,6 +75,7 @@ export function VetoBoard({ match, players, rounds, votes, me }: Props) {
     if (!activeRound) return
     const { error } = await supabase.rpc('cast_vote', { p_round_id: activeRound.id, p_choice: choice })
     if (error) console.error(error)
+    else onChanged()
   }
 
   function voteCountFor(choice: string): number {
@@ -77,17 +84,25 @@ export function VetoBoard({ match, players, rounds, votes, me }: Props) {
   }
 
   function renderRoster(team: Team) {
-    const label = team === 'A' ? 'Команда A' : 'Команда B'
+    const label = teamLabel(match, team)
     const members = players.filter((p) => p.team === team).sort((a, b) => a.slot - b.slot)
     return (
       <div className="roster">
         <h3>{label}</h3>
         {members.map((m) => {
-          const voted = !!activeRound && votes.some((v) => v.round_id === activeRound.id && v.player_id === m.player_id)
+          const memberVotes = activeRound
+            ? votes.filter((v) => v.round_id === activeRound.id && v.player_id === m.player_id).length
+            : 0
+          const done = !!activeRound && memberVotes === activeRound.pick_count
           return (
             <div key={m.slot} className="roster-row">
-              <span className={`roster-dot ${voted && activeRound?.team === team ? 'roster-dot--voted' : ''}`} />
+              <span className={`roster-dot ${done && activeRound?.team === team ? 'roster-dot--voted' : ''}`} />
               <span>{m.profile?.name ?? '—'}</span>
+              {activeRound && activeRound.team === team && activeRound.pick_count > 1 && m.player_id && (
+                <span className="roster-progress">
+                  {memberVotes}/{activeRound.pick_count}
+                </span>
+              )}
             </div>
           )
         })}
@@ -98,8 +113,8 @@ export function VetoBoard({ match, players, rounds, votes, me }: Props) {
   return (
     <div>
       <div className="stage-bar">
-        {STAGES.map((s) => {
-          const status = activeRound ? stageStatus(activeRound.round_no, s.from, s.to) : 'done'
+        {stages(match).map((s) => {
+          const status = activeRound ? stageStatus(activeRound.round_no, s.no) : 'done'
           return (
             <div key={s.label} className={`stage-step stage-step--${status}`}>
               {s.label}
@@ -113,26 +128,31 @@ export function VetoBoard({ match, players, rounds, votes, me }: Props) {
           <h2 className="round-heading">
             {activeRound.kind === 'ban' && (
               <>
-                <span className={`team-tag--${activeRound.team}`}>Команда {activeRound.team}</span> банит карту
+                <span className={`team-tag--${activeRound.team}`}>{teamLabel(match, activeRound.team)}</span> банит{' '}
+                {activeRound.pick_count} карты
               </>
             )}
             {activeRound.kind === 'pick_map' && (
               <>
-                <span className={`team-tag--${activeRound.team}`}>Команда {activeRound.team}</span> выбирает карту
+                <span className={`team-tag--${activeRound.team}`}>{teamLabel(match, activeRound.team)}</span>{' '}
+                выбирает карту
               </>
             )}
             {activeRound.kind === 'pick_side' && (
               <>
-                <span className={`team-tag--${activeRound.team}`}>Команда {activeRound.team}</span> выбирает сторону
+                <span className={`team-tag--${activeRound.team}`}>{teamLabel(match, activeRound.team)}</span>{' '}
+                выбирает сторону
               </>
             )}
           </h2>
           <p className="timer">
             {iAmActingTeam
-              ? myVoteForActiveRound
-                ? `Голос учтён — ждём остальных (${secondsLeft}с)`
-                : `Голосуйте — осталось ${secondsLeft}с`
-              : `Голосует команда ${activeRound.team} — ${secondsLeft}с`}
+              ? canPickMore
+                ? activeRound.pick_count > 1
+                  ? `Выберите ещё ${remainingPicks} из ${activeRound.pick_count} — осталось ${secondsLeft}с`
+                  : `Голосуйте — осталось ${secondsLeft}с`
+                : `Голос учтён (${myVotesForActiveRound.length}/${activeRound.pick_count}) — ждём остальных (${secondsLeft}с)`
+              : `Голосует ${teamLabel(match, activeRound.team)} — ${secondsLeft}с`}
           </p>
         </>
       )}
@@ -142,18 +162,26 @@ export function VetoBoard({ match, players, rounds, votes, me }: Props) {
 
         {activeRound?.kind === 'pick_side' ? (
           <div className="side-grid">
-            {(['CT', 'T'] as const).map((side) => (
-              <div
-                key={side}
-                className={`side-card side-card--${side.toLowerCase()} ${
-                  myVoteForActiveRound?.choice === side ? 'side-card--voted' : ''
-                }`}
-                onClick={() => iAmActingTeam && !myVoteForActiveRound && vote(side)}
-                style={{ cursor: iAmActingTeam && !myVoteForActiveRound ? 'pointer' : 'default' }}
-              >
-                {side === 'CT' ? 'CT' : 'T'} ({voteCountFor(side)})
-              </div>
-            ))}
+            {(['CT', 'T'] as const).map((side) => {
+              const isClickable = iAmActingTeam && (myChoices.has(side) || canPickMore)
+              return (
+                <div
+                  key={side}
+                  className={`side-card side-card--${side.toLowerCase()} ${
+                    myChoices.has(side) ? 'side-card--voted' : ''
+                  }`}
+                  onClick={() => isClickable && vote(side)}
+                  style={{ cursor: isClickable ? 'pointer' : 'default' }}
+                >
+                  <span className="side-card-label">
+                    {side === 'CT' ? 'CT' : 'T'} ({voteCountFor(side)})
+                  </span>
+                  {myChoices.has(side) && isClickable && (
+                    <span className="side-card-unvote-hint">Убрать голос</span>
+                  )}
+                </div>
+              )
+            })}
           </div>
         ) : (
           <div className="map-grid">
@@ -162,8 +190,8 @@ export function VetoBoard({ match, players, rounds, votes, me }: Props) {
               const isBanned = bannedMaps.has(map.code)
               const isResult = pickedMap === map.code
               const isCandidate = !!activeRound && activeRound.options.includes(map.code)
-              const isClickable = isCandidate && iAmActingTeam && !myVoteForActiveRound
-              const votedByMe = myVoteForActiveRound?.choice === map.code
+              const isClickable = isCandidate && iAmActingTeam && (myChoices.has(map.code) || canPickMore)
+              const votedByMe = myChoices.has(map.code)
               return (
                 <div
                   key={map.code}
@@ -180,6 +208,7 @@ export function VetoBoard({ match, players, rounds, votes, me }: Props) {
                 >
                   <img src={map.image} alt={map.name} />
                   {isCandidate && !isBanned && <span className="map-card-votes">{voteCountFor(map.code)}</span>}
+                  {votedByMe && isClickable && <span className="map-card-unvote-hint">Убрать голос</span>}
                   <span className="map-card-label">{map.name}</span>
                 </div>
               )

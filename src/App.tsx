@@ -2,6 +2,7 @@ import { useSession } from './hooks/useSession'
 import { useHashRoute, matchRoomPath } from './hooks/useHashRoute'
 import { Home } from './pages/Home'
 import { Room } from './pages/Room'
+import { UserBadge } from './components/UserBadge'
 import './App.css'
 
 export default function App() {
@@ -10,9 +11,20 @@ export default function App() {
 
   const roomId = matchRoomPath(path)
 
-  if (roomId) {
-    return <Room roomId={roomId} session={session} profile={profile} sessionLoading={loading} />
-  }
-
-  return <Home session={session} onCreated={(id) => navigate(`/room/${id}`)} />
+  return (
+    <>
+      {profile && <UserBadge profile={profile} />}
+      {roomId ? (
+        <Room
+          roomId={roomId}
+          session={session}
+          profile={profile}
+          sessionLoading={loading}
+          onLeftRoom={() => navigate('/')}
+        />
+      ) : (
+        <Home session={session} profile={profile} onCreated={(id) => navigate(`/room/${id}`)} />
+      )}
+    </>
+  )
 }

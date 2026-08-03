@@ -8,6 +8,7 @@ export interface Profile {
   steam_id: string
   name: string
   avatar_url: string | null
+  is_admin: boolean
 }
 
 export interface Match {
@@ -15,9 +16,19 @@ export interface Match {
   created_by: string
   status: MatchStatus
   map_pool: string[]
+  name: string | null
+  team_a_name: string | null
+  team_b_name: string | null
   final_map: string | null
   starting_side: 'CT' | 'T' | null
+  score_a: number | null
+  score_b: number | null
   created_at: string
+}
+
+export interface MatchListItem extends Match {
+  creator: { name: string } | null
+  filled: number
 }
 
 export interface MatchPlayer {
@@ -35,9 +46,10 @@ export interface MatchRound {
   kind: RoundKind
   team: Team
   options: string[]
+  pick_count: number
   deadline: string
   resolved: boolean
-  result: string | null
+  results: string[]
   resolved_by: ResolvedBy | null
 }
 

@@ -70,8 +70,14 @@ export function useMatch(matchId: string) {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'match_votes' }, refetch)
       .subscribe()
 
+    // Realtime can silently drop (e.g. websocket hiccups on a backgrounded
+    // tab), which would otherwise leave the UI stuck until a manual reload —
+    // a cheap poll keeps it eventually consistent regardless.
+    const pollId = setInterval(refetch, 4000)
+
     return () => {
       supabase.removeChannel(channel)
+      clearInterval(pollId)
     }
   }, [matchId, refetch])
 
