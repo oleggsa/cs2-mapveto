@@ -2,10 +2,12 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { mapByCode } from '../config/mapPool'
 import { isPrivileged } from '../lib/permissions'
-import type { Match, Profile } from '../types'
+import { teamLabel } from '../lib/teamNames'
+import type { Match, MatchPlayer, Profile, Team } from '../types'
 
 interface Props {
   match: Match
+  players: MatchPlayer[]
   me: Profile
   onChanged: () => void
 }
@@ -16,7 +18,7 @@ function clampScore(raw: string): string {
   return String(Math.min(50, Number(digits)))
 }
 
-export function ResultScreen({ match, me, onChanged }: Props) {
+export function ResultScreen({ match, players, me, onChanged }: Props) {
   const map = match.final_map ? mapByCode(match.final_map) : undefined
   const isHost = isPrivileged(match, me)
   const hasScore = match.score_a != null && match.score_b != null
@@ -36,44 +38,64 @@ export function ResultScreen({ match, me, onChanged }: Props) {
     else onChanged()
   }
 
-  return (
-    <div className="result-card">
-      {map && <img src={map.image} alt={map.name} />}
-      <div className="result-card-body">
-        <h2>{map?.name ?? match.final_map}</h2>
-
-        {hasScore && (
-          <p className="result-score">
-            Счёт: {match.score_a} : {match.score_b}
-          </p>
-        )}
-
-        {!hasScore && isHost && (
-          <div className="score-form">
-            <input
-              className="text-input score-input"
-              inputMode="numeric"
-              placeholder="A"
-              maxLength={2}
-              value={scoreA}
-              onChange={(e) => setScoreA(clampScore(e.target.value))}
-            />
-            <span>:</span>
-            <input
-              className="text-input score-input"
-              inputMode="numeric"
-              placeholder="B"
-              maxLength={2}
-              value={scoreB}
-              onChange={(e) => setScoreB(clampScore(e.target.value))}
-            />
-            <button className="btn btn-primary" onClick={saveScore} disabled={saving}>
-              Сохранить счёт
-            </button>
+  function renderRoster(team: Team) {
+    const members = players.filter((p) => p.team === team).sort((a, b) => a.slot - b.slot)
+    return (
+      <div className="roster">
+        <h3>{teamLabel(match, team)}</h3>
+        {members.map((m) => (
+          <div key={m.slot} className="roster-row">
+            <span>{m.profile?.name ?? '—'}</span>
           </div>
-        )}
-        {!hasScore && !isHost && <p className="lobby-hint">Хост пока не указал счёт</p>}
+        ))}
       </div>
+    )
+  }
+
+  return (
+    <div className="result-body">
+      {renderRoster('A')}
+
+      <div className="result-card">
+        {map && <img src={map.image} alt={map.name} />}
+        <div className="result-card-body">
+          <h2>{map?.name ?? match.final_map}</h2>
+
+          {hasScore && (
+            <p className="result-score">
+              Счёт: {match.score_a} : {match.score_b}
+            </p>
+          )}
+
+          {!hasScore && isHost && (
+            <div className="score-form">
+              <input
+                className="text-input score-input"
+                inputMode="numeric"
+                placeholder="A"
+                maxLength={2}
+                value={scoreA}
+                onChange={(e) => setScoreA(clampScore(e.target.value))}
+              />
+              <span>:</span>
+              <input
+                className="text-input score-input"
+                inputMode="numeric"
+                placeholder="B"
+                maxLength={2}
+                value={scoreB}
+                onChange={(e) => setScoreB(clampScore(e.target.value))}
+              />
+              <button className="btn btn-primary" onClick={saveScore} disabled={saving}>
+                Сохранить счёт
+              </button>
+            </div>
+          )}
+          {!hasScore && !isHost && <p className="lobby-hint">Хост пока не указал счёт</p>}
+        </div>
+      </div>
+
+      {renderRoster('B')}
     </div>
   )
 }

@@ -687,9 +687,17 @@
 
 /* Result */
 
+.result-body {
+  display: grid;
+  grid-template-columns: 200px 1fr 200px;
+  gap: 20px;
+  align-items: start;
+  margin-top: 40px;
+}
+
 .result-card {
   max-width: 520px;
-  margin: 40px auto;
+  margin: 0 auto;
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 12px;

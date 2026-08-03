@@ -56,7 +56,9 @@ export function Room({ roomId, session, profile, sessionLoading, onLeftRoom }: P
       {match.status === 'veto' && (
         <VetoBoard match={match} players={players} rounds={rounds} votes={votes} me={profile} onChanged={refetch} />
       )}
-      {match.status === 'done' && <ResultScreen match={match} me={profile} onChanged={refetch} />}
+      {match.status === 'done' && (
+        <ResultScreen match={match} players={players} me={profile} onChanged={refetch} />
+      )}
     </div>
   )
 }
