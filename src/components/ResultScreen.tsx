@@ -10,6 +10,12 @@ interface Props {
   onChanged: () => void
 }
 
+function clampScore(raw: string): string {
+  const digits = raw.replace(/\D/g, '').slice(0, 2)
+  if (digits === '') return ''
+  return String(Math.min(50, Number(digits)))
+}
+
 export function ResultScreen({ match, me, onChanged }: Props) {
   const map = match.final_map ? mapByCode(match.final_map) : undefined
   const isHost = isPrivileged(match, me)
@@ -50,7 +56,7 @@ export function ResultScreen({ match, me, onChanged }: Props) {
               placeholder="A"
               maxLength={2}
               value={scoreA}
-              onChange={(e) => setScoreA(e.target.value.replace(/\D/g, '').slice(0, 2))}
+              onChange={(e) => setScoreA(clampScore(e.target.value))}
             />
             <span>:</span>
             <input
@@ -59,7 +65,7 @@ export function ResultScreen({ match, me, onChanged }: Props) {
               placeholder="B"
               maxLength={2}
               value={scoreB}
-              onChange={(e) => setScoreB(e.target.value.replace(/\D/g, '').slice(0, 2))}
+              onChange={(e) => setScoreB(clampScore(e.target.value))}
             />
             <button className="btn btn-primary" onClick={saveScore} disabled={saving}>
               Сохранить счёт

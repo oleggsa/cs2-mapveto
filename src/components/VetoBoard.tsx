@@ -94,6 +94,13 @@ export function VetoBoard({ match, players, rounds, votes, me, onChanged }: Prop
     return votes.filter((v) => v.round_id === activeRound.id && v.choice === choice).length
   }
 
+  function votersFor(choice: string): string[] {
+    if (!activeRound) return []
+    return votes
+      .filter((v) => v.round_id === activeRound.id && v.choice === choice)
+      .map((v) => players.find((p) => p.player_id === v.player_id)?.profile?.name ?? '?')
+  }
+
   function renderRoster(team: Team) {
     const label = teamLabel(match, team)
     const members = players.filter((p) => p.team === team).sort((a, b) => a.slot - b.slot)
@@ -173,6 +180,7 @@ export function VetoBoard({ match, players, rounds, votes, me, onChanged }: Prop
             const isCandidate = !!activeRound && activeRound.options.includes(map.code)
             const isClickable = isCandidate && iAmActingTeam && (myChoices.has(map.code) || canPickMore)
             const votedByMe = myChoices.has(map.code)
+            const voters = isCandidate && !isBanned ? votersFor(map.code) : []
             return (
               <div
                 key={map.code}
@@ -190,7 +198,10 @@ export function VetoBoard({ match, players, rounds, votes, me, onChanged }: Prop
                 <img src={map.image} alt={map.name} />
                 {isCandidate && !isBanned && <span className="map-card-votes">{voteCountFor(map.code)}</span>}
                 {votedByMe && isClickable && <span className="map-card-unvote-hint">Убрать голос</span>}
-                <span className="map-card-label">{map.name}</span>
+                <span className="map-card-label">
+                  {map.name}
+                  {voters.length > 0 && <span className="map-card-voters">{voters.join(', ')}</span>}
+                </span>
               </div>
             )
           })}

@@ -568,6 +568,17 @@
   text-align: center;
 }
 
+.map-card-voters {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .map-card-votes {
   position: absolute;
   top: 8px;
@@ -711,7 +722,15 @@
 }
 
 .score-input {
+  box-sizing: border-box;
   width: 56px;
+  height: 44px;
   margin: 0;
+  padding: 0 8px;
   text-align: center;
+}
+
+.score-form .btn {
+  box-sizing: border-box;
+  height: 44px;
 }
