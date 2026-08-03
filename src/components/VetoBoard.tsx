@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { mapByCode } from '../config/mapPool'
 import { teamLabel, teamSuffix } from '../lib/teamNames'
@@ -46,18 +46,30 @@ function useCountdown(deadline: string) {
 export function VetoBoard({ match, players, rounds, votes, me, onChanged }: Props) {
   const activeRound = rounds.find((r) => !r.resolved)
   const secondsLeft = useCountdown(activeRound?.deadline ?? new Date().toISOString())
-  const resolvedFor = useRef<string | null>(null)
+  const activeRoundId = activeRound?.id
+  const pastDeadline = secondsLeft <= 0
 
+  // resolve_round is a no-op unless the round is actually past its deadline
+  // server-side (or fully voted), so a single call right as the client clock
+  // hits 0 can silently do nothing (e.g. client slightly ahead of server).
+  // Keep retrying on an interval — cheap and idempotent — until this round
+  // stops being the active one (i.e. it actually resolved).
   useEffect(() => {
-    if (!activeRound) return
-    if (secondsLeft > 0) return
-    if (resolvedFor.current === activeRound.id) return
-    resolvedFor.current = activeRound.id
-    supabase.rpc('resolve_round', { p_round_id: activeRound.id }).then(({ error }) => {
-      if (error) console.error(error)
-      onChanged()
-    })
-  }, [activeRound, secondsLeft, onChanged])
+    if (!activeRoundId || !pastDeadline) return
+    let cancelled = false
+    const attempt = () => {
+      supabase.rpc('resolve_round', { p_round_id: activeRoundId }).then(({ error }) => {
+        if (error) console.error(error)
+        if (!cancelled) onChanged()
+      })
+    }
+    attempt()
+    const id = setInterval(attempt, 3000)
+    return () => {
+      cancelled = true
+      clearInterval(id)
+    }
+  }, [activeRoundId, pastDeadline, onChanged])
 
   const bannedMaps = new Set(rounds.filter((r) => r.kind === 'ban' && r.resolved).flatMap((r) => r.results))
   const pickedMap = rounds.find((r) => r.kind === 'pick_map' && r.resolved)?.results?.[0] ?? null
