@@ -17,8 +17,13 @@ function stages(match: Match) {
   return [
     { label: `Бан ${teamSuffix(match, 'A')} ×2`, no: 1 },
     { label: `Бан ${teamSuffix(match, 'B')} ×3`, no: 2 },
-    { label: `Пик карты ${teamSuffix(match, 'A')}`, no: 3 },
+    { label: `Бан ${teamSuffix(match, 'A')} (решающий)`, no: 3 },
   ]
+}
+
+function mapWord(count: number): string {
+  if (count === 1) return 'карту'
+  return 'карты'
 }
 
 function stageStatus(activeRoundNo: number, stageNo: number) {
@@ -147,7 +152,7 @@ export function VetoBoard({ match, players, rounds, votes, me, onChanged }: Prop
             {activeRound.kind === 'ban' && (
               <>
                 <span className={`team-tag--${activeRound.team}`}>{teamLabel(match, activeRound.team)}</span> банит{' '}
-                {activeRound.pick_count} карты
+                {activeRound.pick_count} {mapWord(activeRound.pick_count)}
               </>
             )}
             {activeRound.kind === 'pick_map' && (

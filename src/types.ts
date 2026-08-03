@@ -9,6 +9,8 @@ export interface Profile {
   name: string
   avatar_url: string | null
   is_admin: boolean
+  faceit_level: number | null
+  faceit_elo: number | null
 }
 
 export interface Match {

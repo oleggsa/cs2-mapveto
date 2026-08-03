@@ -4,7 +4,7 @@
 //   "callback"            -> verify Steam's response server-side, upsert the profile,
 //                             mint a Supabase session token, redirect back to the app
 //
-// Required secrets (supabase secrets set ...): STEAM_API_KEY, SITE_URL
+// Required secrets (supabase secrets set ...): STEAM_API_KEY, SITE_URL, FACEIT_API_KEY (optional)
 // SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY are injected automatically by the platform.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -16,6 +16,8 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const STEAM_API_KEY = Deno.env.get("STEAM_API_KEY")!;
 const SITE_URL = Deno.env.get("SITE_URL")!; // e.g. https://<user>.github.io/map-vote
+// Optional: without it, Faceit level/elo sync is simply skipped.
+const FACEIT_API_KEY = Deno.env.get("FACEIT_API_KEY");
 
 const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
@@ -88,6 +90,57 @@ async function fetchSteamProfile(steamId: string): Promise<{ name: string; avata
   };
 }
 
+// Looks up the player's CS2 (falling back to legacy CSGO) skill level/elo on
+// Faceit's public Data API. Matching is by Steam ID, so it needs no Faceit
+// login from the user at all — just a server-side API key.
+async function fetchFaceitLevel(steamId: string): Promise<{ level: number; elo: number } | null> {
+  if (!FACEIT_API_KEY) return null;
+
+  for (const game of ["cs2", "csgo"]) {
+    const res = await fetch(
+      `https://open.faceit.com/data/v4/players?game=${game}&game_player_id=${steamId}`,
+      { headers: { Authorization: `Bearer ${FACEIT_API_KEY}` } },
+    );
+    if (res.status === 404) continue;
+    if (!res.ok) throw new Error(`Faceit API (${game}) responded ${res.status}`);
+
+    const data = await res.json();
+    const stats = data?.games?.[game];
+    if (stats?.skill_level) {
+      return { level: stats.skill_level, elo: stats.faceit_elo ?? 0 };
+    }
+  }
+  return null;
+}
+
+// Runs after the response has already been sent (see backgroundTask below),
+// so a slow or failing Faceit lookup never delays or breaks the Steam login.
+async function syncFaceitLevel(userId: string, steamId: string): Promise<void> {
+  try {
+    const result = await fetchFaceitLevel(steamId);
+    if (!result) return;
+    await admin
+      .from("profiles")
+      .update({
+        faceit_level: result.level,
+        faceit_elo: result.elo,
+        faceit_synced_at: new Date().toISOString(),
+      })
+      .eq("id", userId);
+  } catch (err) {
+    console.error("Faceit sync failed", err);
+  }
+}
+
+// Schedules `promise` to keep running after the request handler returns its
+// response, via the edge runtime's background-task hook when available.
+function backgroundTask(promise: Promise<void>): void {
+  const waitUntil = (globalThis as unknown as { EdgeRuntime?: { waitUntil?: (p: Promise<void>) => void } })
+    .EdgeRuntime?.waitUntil;
+  if (waitUntil) waitUntil(promise);
+  else promise.catch((err) => console.error("background task failed", err));
+}
+
 async function handleCallback(req: Request): Promise<Response> {
   const url = new URL(req.url);
   const room = url.searchParams.get("room") ?? "";
@@ -130,6 +183,10 @@ async function handleCallback(req: Request): Promise<Response> {
       return new Response(`could not create profile: ${insertErr.message}`, { status: 500 });
     }
   }
+
+  // Fire-and-forget: kicks off after this function returns its redirect, so a
+  // slow/unavailable Faceit API never delays or breaks the login itself.
+  backgroundTask(syncFaceitLevel(userId, steamId));
 
   const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
     type: "magiclink",

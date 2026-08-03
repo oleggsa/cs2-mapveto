@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { FaceitBadge } from './FaceitBadge'
 import type { Profile } from '../types'
 
 interface Props {
@@ -25,11 +26,14 @@ export function UserBadge({ profile }: Props) {
   return (
     <div className="user-badge" ref={rootRef}>
       <button className="user-badge-trigger" onClick={() => setOpen((v) => !v)}>
-        {profile.avatar_url ? (
-          <img className="user-badge-avatar" src={profile.avatar_url} alt="" />
-        ) : (
-          <span className="user-badge-avatar" />
-        )}
+        <span className="avatar-wrap">
+          {profile.avatar_url ? (
+            <img className="user-badge-avatar" src={profile.avatar_url} alt="" />
+          ) : (
+            <span className="user-badge-avatar" />
+          )}
+          <FaceitBadge level={profile.faceit_level} elo={profile.faceit_elo} />
+        </span>
         <span className="user-badge-name">{profile.name}</span>
       </button>
       {open && (

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { isPrivileged } from '../lib/permissions'
 import { teamSuffix } from '../lib/teamNames'
+import { FaceitBadge } from './FaceitBadge'
 import type { Match, MatchPlayer, Profile, Team } from '../types'
 
 interface Props {
@@ -101,11 +102,14 @@ export function Lobby({ match, players, me, onChanged }: Props) {
             >
               {slot.player_id ? (
                 <>
-                  {slot.profile?.avatar_url ? (
-                    <img className="slot-avatar" src={slot.profile.avatar_url} alt="" />
-                  ) : (
-                    <span className="slot-avatar" />
-                  )}
+                  <span className="avatar-wrap">
+                    {slot.profile?.avatar_url ? (
+                      <img className="slot-avatar" src={slot.profile.avatar_url} alt="" />
+                    ) : (
+                      <span className="slot-avatar" />
+                    )}
+                    <FaceitBadge level={slot.profile?.faceit_level} elo={slot.profile?.faceit_elo} />
+                  </span>
                   <span className="slot-name">{slot.profile?.name ?? '…'}</span>
                   {isMine && (
                     <button className="slot-action" onClick={leave}>
