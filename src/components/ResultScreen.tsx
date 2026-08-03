@@ -22,7 +22,7 @@ export function ResultScreen({ match, me, onChanged }: Props) {
   async function saveScore() {
     const a = Number(scoreA)
     const b = Number(scoreB)
-    if (!Number.isInteger(a) || !Number.isInteger(b) || a < 0 || b < 0) return
+    if (!Number.isInteger(a) || !Number.isInteger(b) || a < 0 || b < 0 || a > 50 || b > 50) return
     setSaving(true)
     const { error } = await supabase.rpc('set_score', { p_match_id: match.id, p_score_a: a, p_score_b: b })
     setSaving(false)
@@ -48,16 +48,18 @@ export function ResultScreen({ match, me, onChanged }: Props) {
               className="text-input score-input"
               inputMode="numeric"
               placeholder="A"
+              maxLength={2}
               value={scoreA}
-              onChange={(e) => setScoreA(e.target.value)}
+              onChange={(e) => setScoreA(e.target.value.replace(/\D/g, '').slice(0, 2))}
             />
             <span>:</span>
             <input
               className="text-input score-input"
               inputMode="numeric"
               placeholder="B"
+              maxLength={2}
               value={scoreB}
-              onChange={(e) => setScoreB(e.target.value)}
+              onChange={(e) => setScoreB(e.target.value.replace(/\D/g, '').slice(0, 2))}
             />
             <button className="btn btn-primary" onClick={saveScore} disabled={saving}>
               Сохранить счёт
