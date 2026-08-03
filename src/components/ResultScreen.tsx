@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { mapByCode } from '../config/mapPool'
 import { isPrivileged } from '../lib/permissions'
-import { teamLabel } from '../lib/teamNames'
 import type { Match, Profile } from '../types'
 
 interface Props {
@@ -36,11 +35,6 @@ export function ResultScreen({ match, me, onChanged }: Props) {
       {map && <img src={map.image} alt={map.name} />}
       <div className="result-card-body">
         <h2>{map?.name ?? match.final_map}</h2>
-        {match.starting_side && (
-          <div className="result-side">
-            {teamLabel(match, 'B')} начинает за {match.starting_side === 'CT' ? 'CT' : 'T'}
-          </div>
-        )}
 
         {hasScore && (
           <p className="result-score">

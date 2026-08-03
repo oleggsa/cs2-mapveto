@@ -138,6 +138,24 @@
   z-index: 50;
 }
 
+.home-btn {
+  position: fixed;
+  top: 16px;
+  left: 20px;
+  z-index: 50;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.home-btn:hover {
+  border-color: var(--accent);
+}
+
 .user-badge-trigger {
   display: flex;
   align-items: center;
@@ -274,15 +292,19 @@
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 0 12px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   max-width: 320px;
   cursor: pointer;
 }
 
 .room-link:hover {
   border-color: var(--accent);
+}
+
+.room-link-text {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .room-link-copied {
@@ -611,58 +633,6 @@
   opacity: 1;
 }
 
-.side-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-  max-width: 480px;
-  margin: 0 auto;
-}
-
-.side-card {
-  position: relative;
-  overflow: hidden;
-  border-radius: 10px;
-  border: 2px solid var(--border);
-  background: var(--panel-alt);
-  padding: 32px 16px;
-  text-align: center;
-  font-size: 20px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.side-card-unvote-hint {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 71, 87, 0.9);
-  color: #fff;
-  font-size: 14px;
-  opacity: 0;
-  transition: opacity 0.15s;
-  pointer-events: none;
-}
-
-.side-card--voted:hover .side-card-unvote-hint {
-  opacity: 1;
-}
-
-.side-card--ct {
-  color: var(--team-a);
-}
-
-.side-card--t {
-  color: var(--accent);
-}
-
-.side-card--voted {
-  border-color: var(--accent);
-}
-
 .roster {
   background: var(--panel);
   border: 1px solid var(--border);
@@ -724,15 +694,6 @@
 
 .result-card-body {
   padding: 24px;
-}
-
-.result-side {
-  display: inline-block;
-  margin-top: 10px;
-  padding: 6px 16px;
-  border-radius: 999px;
-  font-weight: 700;
-  background: var(--panel-alt);
 }
 
 .result-score {

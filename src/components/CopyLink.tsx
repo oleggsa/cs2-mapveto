@@ -15,7 +15,7 @@ export function CopyLink({ text }: Props) {
 
   return (
     <button className="room-link" onClick={copy} title="Скопировать ссылку">
-      {text}
+      <span className="room-link-text">{text}</span>
       <span className={`room-link-copied ${copied ? 'room-link-copied--show' : ''}`}>
         Скопировано
       </span>

@@ -18,7 +18,6 @@ function stages(match: Match) {
     { label: `Бан ${teamSuffix(match, 'A')} ×2`, no: 1 },
     { label: `Бан ${teamSuffix(match, 'B')} ×3`, no: 2 },
     { label: `Пик карты ${teamSuffix(match, 'A')}`, no: 3 },
-    { label: `Пик стороны ${teamSuffix(match, 'B')}`, no: 4 },
   ]
 }
 
@@ -150,12 +149,6 @@ export function VetoBoard({ match, players, rounds, votes, me, onChanged }: Prop
                 выбирает карту
               </>
             )}
-            {activeRound.kind === 'pick_side' && (
-              <>
-                <span className={`team-tag--${activeRound.team}`}>{teamLabel(match, activeRound.team)}</span>{' '}
-                выбирает сторону
-              </>
-            )}
           </h2>
           <p className="timer">
             {iAmActingTeam
@@ -172,61 +165,36 @@ export function VetoBoard({ match, players, rounds, votes, me, onChanged }: Prop
       <div className="veto-body">
         {renderRoster('A')}
 
-        {activeRound?.kind === 'pick_side' ? (
-          <div className="side-grid">
-            {(['CT', 'T'] as const).map((side) => {
-              const isClickable = iAmActingTeam && (myChoices.has(side) || canPickMore)
-              return (
-                <div
-                  key={side}
-                  className={`side-card side-card--${side.toLowerCase()} ${
-                    myChoices.has(side) ? 'side-card--voted' : ''
-                  }`}
-                  onClick={() => isClickable && vote(side)}
-                  style={{ cursor: isClickable ? 'pointer' : 'default' }}
-                >
-                  <span className="side-card-label">
-                    {side === 'CT' ? 'CT' : 'T'} ({voteCountFor(side)})
-                  </span>
-                  {myChoices.has(side) && isClickable && (
-                    <span className="side-card-unvote-hint">Убрать голос</span>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        ) : (
-          <div className="map-grid">
-            {match.map_pool.map((code) => {
-              const map = mapByCode(code) ?? { code, name: code, image: '' }
-              const isBanned = bannedMaps.has(map.code)
-              const isResult = pickedMap === map.code
-              const isCandidate = !!activeRound && activeRound.options.includes(map.code)
-              const isClickable = isCandidate && iAmActingTeam && (myChoices.has(map.code) || canPickMore)
-              const votedByMe = myChoices.has(map.code)
-              return (
-                <div
-                  key={map.code}
-                  className={[
-                    'map-card',
-                    isBanned ? 'map-card--banned' : '',
-                    isResult ? 'map-card--result' : '',
-                    isClickable ? 'map-card--clickable' : '',
-                    votedByMe ? 'map-card--voted' : '',
-                  ]
-                    .filter(Boolean)
-                    .join(' ')}
-                  onClick={() => isClickable && vote(map.code)}
-                >
-                  <img src={map.image} alt={map.name} />
-                  {isCandidate && !isBanned && <span className="map-card-votes">{voteCountFor(map.code)}</span>}
-                  {votedByMe && isClickable && <span className="map-card-unvote-hint">Убрать голос</span>}
-                  <span className="map-card-label">{map.name}</span>
-                </div>
-              )
-            })}
-          </div>
-        )}
+        <div className="map-grid">
+          {match.map_pool.map((code) => {
+            const map = mapByCode(code) ?? { code, name: code, image: '' }
+            const isBanned = bannedMaps.has(map.code)
+            const isResult = pickedMap === map.code
+            const isCandidate = !!activeRound && activeRound.options.includes(map.code)
+            const isClickable = isCandidate && iAmActingTeam && (myChoices.has(map.code) || canPickMore)
+            const votedByMe = myChoices.has(map.code)
+            return (
+              <div
+                key={map.code}
+                className={[
+                  'map-card',
+                  isBanned ? 'map-card--banned' : '',
+                  isResult ? 'map-card--result' : '',
+                  isClickable ? 'map-card--clickable' : '',
+                  votedByMe ? 'map-card--voted' : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+                onClick={() => isClickable && vote(map.code)}
+              >
+                <img src={map.image} alt={map.name} />
+                {isCandidate && !isBanned && <span className="map-card-votes">{voteCountFor(map.code)}</span>}
+                {votedByMe && isClickable && <span className="map-card-unvote-hint">Убрать голос</span>}
+                <span className="map-card-label">{map.name}</span>
+              </div>
+            )
+          })}
+        </div>
 
         {renderRoster('B')}
       </div>

@@ -14,6 +14,11 @@ export default function App() {
   return (
     <>
       {profile && <UserBadge profile={profile} />}
+      {roomId && (
+        <button className="home-btn" onClick={() => navigate('/')} title="На главную">
+          ← Главная
+        </button>
+      )}
       {roomId ? (
         <Room
           roomId={roomId}
