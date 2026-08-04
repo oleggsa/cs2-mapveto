@@ -36,22 +36,25 @@ export default function App() {
 
   return (
     <>
-      <div className="top-bar">
-        {profile && isHome && (
-          <CreateMenu
-            onSelectMatch={createMatch}
-            onSelectTournament={() => setShowTournamentModal(true)}
-            disabled={creatingMatch}
-          />
-        )}
-        {profile && <UserBadge profile={profile} />}
+      <div className="app-header">
+        <div className="app-header-left">
+          {(roomId || playerId || tournamentId) && (
+            <button className="home-btn" onClick={() => navigate('/')} title="На главную">
+              ← Главная
+            </button>
+          )}
+        </div>
+        <div className="app-header-right">
+          {profile && isHome && (
+            <CreateMenu
+              onSelectMatch={createMatch}
+              onSelectTournament={() => setShowTournamentModal(true)}
+              disabled={creatingMatch}
+            />
+          )}
+          {profile && <UserBadge profile={profile} />}
+        </div>
       </div>
-
-      {(roomId || playerId || tournamentId) && (
-        <button className="home-btn" onClick={() => navigate('/')} title="На главную">
-          ← Главная
-        </button>
-      )}
 
       {showTournamentModal && (
         <CreateTournamentModal

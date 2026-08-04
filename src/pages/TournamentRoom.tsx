@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { useTournament } from '../hooks/useTournament'
 import { TournamentHeader } from '../components/TournamentHeader'
@@ -17,6 +18,7 @@ interface Props {
 
 export function TournamentRoom({ tournamentId, session, profile, sessionLoading, onLeftRoom }: Props) {
   const { tournament, teams, players, matches, loading, refetch } = useTournament(tournamentId)
+  const [showAdminRoster, setShowAdminRoster] = useState(false)
 
   if (loading || sessionLoading) {
     return (
@@ -46,6 +48,8 @@ export function TournamentRoom({ tournamentId, session, profile, sessionLoading,
     )
   }
 
+  const canManageRosters = profile.is_admin && tournament.status !== 'lobby'
+
   return (
     <div className="page">
       <TournamentHeader
@@ -56,14 +60,22 @@ export function TournamentRoom({ tournamentId, session, profile, sessionLoading,
         tournamentId={tournamentId}
         onDeleted={onLeftRoom}
         onChanged={refetch}
+        adminRosterToggle={
+          canManageRosters && !showAdminRoster ? (
+            <button className="btn btn-sm admin-roster-toggle" onClick={() => setShowAdminRoster(true)}>
+              Управление составами (админ)
+            </button>
+          ) : undefined
+        }
       />
 
-      {profile.is_admin && tournament.status !== 'lobby' && (
+      {canManageRosters && showAdminRoster && (
         <TournamentAdminRoster
           tournamentId={tournamentId}
           teams={teams}
           players={players}
           onChanged={refetch}
+          onClose={() => setShowAdminRoster(false)}
         />
       )}
 
@@ -71,7 +83,7 @@ export function TournamentRoom({ tournamentId, session, profile, sessionLoading,
         <TournamentLobby tournament={tournament} teams={teams} players={players} me={profile} onChanged={refetch} />
       )}
       {tournament.status !== 'lobby' && (
-        <TournamentBracket teams={teams} matches={matches} players={players} />
+        <TournamentBracket teams={teams} matches={matches} players={players} me={profile} />
       )}
     </div>
   )

@@ -52,7 +52,7 @@ export function Room({ roomId, session, profile, sessionLoading, onLeftRoom }: P
 
   return (
     <div className="page">
-      <RoomHeader match={match} me={profile} roomId={roomId} onChanged={refetch} />
+      <RoomHeader match={match} players={players} me={profile} roomId={roomId} onChanged={refetch} />
 
       <div className="room-toolbar">
         {profile.is_admin && <MatchAdminRoster match={match} players={players} onChanged={refetch} />}

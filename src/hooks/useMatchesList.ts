@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import type { MatchListItem } from '../types'
+import type { MatchListItem, Team } from '../types'
 
 export type StatusFilter = 'all' | 'active' | 'completed'
 export type ScopeFilter = 'all' | 'mine'
@@ -33,19 +33,26 @@ export function useMatchesList(statusFilter: StatusFilter, scopeFilter: ScopeFil
 
     const filledByMatch = new Map<string, number>()
     const seatedMatchIds = new Set<string>()
+    const myTeamByMatch = new Map<string, Team>()
     if (matchIds.length) {
       const { data: players } = await supabase
         .from('match_players')
-        .select('match_id, player_id')
+        .select('match_id, player_id, team')
         .in('match_id', matchIds)
       for (const p of players ?? []) {
         if (!p.player_id) continue
         filledByMatch.set(p.match_id, (filledByMatch.get(p.match_id) ?? 0) + 1)
-        if (p.player_id === meId) seatedMatchIds.add(p.match_id)
+        if (p.player_id === meId) {
+          seatedMatchIds.add(p.match_id)
+          myTeamByMatch.set(p.match_id, p.team)
+        }
       }
     }
 
-    let list = (rows ?? []).map((m) => ({ ...m, filled: filledByMatch.get(m.id) ?? 0 }) as MatchListItem)
+    let list = (rows ?? []).map(
+      (m) =>
+        ({ ...m, filled: filledByMatch.get(m.id) ?? 0, myTeam: myTeamByMatch.get(m.id) ?? null }) as MatchListItem,
+    )
     if (scopeFilter === 'mine') {
       // A tournament match's created_by is always the tournament's organizer,
       // not necessarily someone actually playing in that specific game — only

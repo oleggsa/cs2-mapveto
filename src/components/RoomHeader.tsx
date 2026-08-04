@@ -2,21 +2,24 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { isPrivileged } from '../lib/permissions'
 import { MATCH_STATUS_LABEL } from '../lib/matchStatus'
+import { teamSuffix } from '../lib/teamNames'
 import { CopyLink } from './CopyLink'
-import type { Match, Profile } from '../types'
+import type { Match, MatchPlayer, Profile } from '../types'
 
 interface Props {
   match: Match
+  players: MatchPlayer[]
   me: Profile
   roomId: string
   onChanged: () => void
 }
 
-export function RoomHeader({ match, me, roomId, onChanged }: Props) {
+export function RoomHeader({ match, players, me, roomId, onChanged }: Props) {
   const canManage = isPrivileged(match, me)
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState(match.name ?? '')
   const isHistorical = match.status === 'done' || match.status === 'cancelled'
+  const myTeam = players.find((p) => p.player_id === me.id)?.team ?? null
 
   async function saveName() {
     const { error } = await supabase.rpc('rename_match', { p_match_id: match.id, p_name: name })
@@ -58,6 +61,11 @@ export function RoomHeader({ match, me, roomId, onChanged }: Props) {
                 <button className="icon-btn" onClick={() => setEditing(true)} title="Переименовать">
                   ✎
                 </button>
+              )}
+              {myTeam && (
+                <span className={`my-team-tag my-team-tag--${myTeam.toLowerCase()}`}>
+                  Вы играете за {teamSuffix(match, myTeam)}
+                </span>
               )}
             </>
           )}

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
 import { isPrivilegedTournament } from '../lib/permissions'
 import { bracketColor } from '../lib/bracketColors'
@@ -17,6 +17,7 @@ interface Props {
   tournamentId: string
   onDeleted: () => void
   onChanged: () => void
+  adminRosterToggle?: ReactNode
 }
 
 function formatDate(iso: string): string {
@@ -28,7 +29,16 @@ function formatDate(iso: string): string {
   })
 }
 
-export function TournamentHeader({ tournament, teams, players, me, tournamentId, onDeleted, onChanged }: Props) {
+export function TournamentHeader({
+  tournament,
+  teams,
+  players,
+  me,
+  tournamentId,
+  onDeleted,
+  onChanged,
+  adminRosterToggle,
+}: Props) {
   const canManage = isPrivilegedTournament(tournament, me)
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState(tournament.name ?? '')
@@ -182,6 +192,7 @@ export function TournamentHeader({ tournament, teams, players, me, tournamentId,
             </span>
           )
         })}
+        {adminRosterToggle}
       </div>
     </div>
   )

@@ -1,11 +1,12 @@
 import { bracketColor } from '../lib/bracketColors'
 import { mapByCode } from '../config/mapPool'
-import type { TournamentMatch, TournamentPlayer, TournamentTeam } from '../types'
+import type { Profile, TournamentMatch, TournamentPlayer, TournamentTeam } from '../types'
 
 interface Props {
   teams: TournamentTeam[]
   matches: TournamentMatch[]
   players: TournamentPlayer[]
+  me?: Profile | null
 }
 
 interface Standing {
@@ -92,13 +93,14 @@ function matchStatusLabel(m: TournamentMatch, matches: TournamentMatch[]): strin
   return ''
 }
 
-export function TournamentBracket({ teams, matches, players }: Props) {
+export function TournamentBracket({ teams, matches, players, me }: Props) {
   const teamById = new Map(teams.map((t) => [t.id, t]))
   const rounds = [1, 2, 3].map((roundNo) => ({
     roundNo,
     boards: matches.filter((m) => m.tournament_round_no === roundNo).sort((a, b) => a.tournament_board_no - b.tournament_board_no),
   }))
   const standings = computeStandings(teams, matches)
+  const myTeamId = me ? players.find((p) => p.player_id === me.id)?.team_id : undefined
 
   return (
     <div className="bracket">
@@ -140,36 +142,40 @@ export function TournamentBracket({ teams, matches, players }: Props) {
         ))}
       </div>
 
-      <table className="standings-table">
-        <thead>
-          <tr>
-            <th>Место</th>
-            <th>Команда</th>
-            <th title="Сыграно матчей">И</th>
-            <th title="Победы – поражения">В-П</th>
-            <th title="Разница выигранных и проигранных раундов">Разница раундов</th>
-            <th title="Матчи, которые ещё предстоит сыграть">Осталось</th>
-          </tr>
-        </thead>
-        <tbody>
-          {standings.map((s, i) => (
-            <tr key={s.team.id}>
-              <td className="standings-place">{i + 1}</td>
-              <td>
-                <TeamTag team={s.team} players={players} />
-              </td>
-              <td>{s.played}</td>
-              <td>
-                {s.wins}-{s.losses}
-              </td>
-              <td className={s.roundDiff > 0 ? 'standings-diff--pos' : s.roundDiff < 0 ? 'standings-diff--neg' : ''}>
-                {s.roundDiff > 0 ? `+${s.roundDiff}` : s.roundDiff}
-              </td>
-              <td>{GAMES_PER_TEAM - s.played}</td>
+      <div className="standings-wrap">
+        <table className="standings-table">
+          <thead>
+            <tr>
+              <th>Место</th>
+              <th>Команда</th>
+              <th title="Сыграно матчей">И</th>
+              <th title="Победы – поражения">В-П</th>
+              <th title="Разница выигранных и проигранных раундов">Разница раундов</th>
+              <th title="Матчи, которые ещё предстоит сыграть">Осталось</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {standings.map((s, i) => (
+              <tr key={s.team.id} className={s.team.id === myTeamId ? 'standings-row--me' : ''}>
+                <td className="standings-place">{i + 1}</td>
+                <td>
+                  <TeamTag team={s.team} players={players} />
+                </td>
+                <td>{s.played}</td>
+                <td>
+                  {s.wins}-{s.losses}
+                </td>
+                <td
+                  className={s.roundDiff > 0 ? 'standings-diff--pos' : s.roundDiff < 0 ? 'standings-diff--neg' : ''}
+                >
+                  {s.roundDiff > 0 ? `+${s.roundDiff}` : s.roundDiff}
+                </td>
+                <td>{GAMES_PER_TEAM - s.played}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }

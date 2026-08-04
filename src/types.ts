@@ -38,6 +38,7 @@ export interface Match {
 export interface MatchListItem extends Match {
   creator: { name: string } | null
   filled: number
+  myTeam: Team | null
 }
 
 export interface PlayerMatchItem extends Match {

@@ -7,7 +7,7 @@ import { TOURNAMENT_STATUS_LABEL } from '../lib/tournamentStatus'
 import { MATCH_STATUS_LABEL } from '../lib/matchStatus'
 import { mapByCode } from '../config/mapPool'
 import { teamSuffix } from '../lib/teamNames'
-import type { Profile } from '../types'
+import type { MatchListItem, Profile, Team } from '../types'
 
 interface Props {
   session: Session | null
@@ -24,6 +24,26 @@ function formatDate(iso: string): string {
     hour: '2-digit',
     minute: '2-digit',
   })
+}
+
+function opponent(team: Team): Team {
+  return team === 'A' ? 'B' : 'A'
+}
+
+/** null when the viewer wasn't seated in this match (e.g. they only created a
+ * standalone match without joining a slot) or the match has no score yet. */
+function matchResult(m: MatchListItem): 'win' | 'loss' | null {
+  if (!m.myTeam || m.score_a == null || m.score_b == null) return null
+  const my = m.myTeam === 'A' ? m.score_a : m.score_b
+  const their = m.myTeam === 'A' ? m.score_b : m.score_a
+  if (my === their) return null
+  return my > their ? 'win' : 'loss'
+}
+
+function statusLabel(m: MatchListItem, result: 'win' | 'loss' | null): string {
+  if (m.status === 'done' && result === 'win') return 'Победа'
+  if (m.status === 'done' && result === 'loss') return 'Поражение'
+  return MATCH_STATUS_LABEL[m.status] ?? m.status
 }
 
 export function Home({ session, profile }: Props) {
@@ -92,18 +112,43 @@ export function Home({ session, profile }: Props) {
 
           {matches.map((m) => {
             const hasScore = m.score_a != null && m.score_b != null
+            const result = matchResult(m)
+            const myScore = m.myTeam === 'A' ? m.score_a : m.score_b
+            const theirScore = m.myTeam === 'A' ? m.score_b : m.score_a
             return (
-              <a key={m.id} className="match-row match-row--player" href={`#/room/${m.id}`}>
-                <span className="match-row-name">{m.name || `Матч #${m.id.slice(0, 8)}`}</span>
-                <span className="match-row-meta">
-                  {m.final_map ? (mapByCode(m.final_map)?.name ?? m.final_map) : '—'}
-                </span>
-                <span className="match-row-meta">
-                  {teamSuffix(m, 'A')} vs {teamSuffix(m, 'B')}
-                </span>
-                <span className="match-row-meta">{hasScore ? `${m.score_a}:${m.score_b}` : '—'}</span>
-                <span className="match-row-meta">{formatDate(m.created_at)}</span>
-                <span className="match-row-status">{MATCH_STATUS_LABEL[m.status] ?? m.status}</span>
+              <a
+                key={m.id}
+                className={`match-row ${result ? `match-row--${result}` : ''}`}
+                href={`#/room/${m.id}`}
+              >
+                <div className="match-row-top">
+                  <span className="match-row-name">{m.name || `Матч #${m.id.slice(0, 8)}`}</span>
+                  <span className={`match-row-status ${result && m.status === 'done' ? `match-row-status--${result}` : ''}`}>
+                    {statusLabel(m, result)}
+                  </span>
+                </div>
+                <div className="match-row-bottom">
+                  <span className="match-row-meta">
+                    {m.final_map ? (mapByCode(m.final_map)?.name ?? m.final_map) : '—'}
+                  </span>
+                  <span className="match-row-meta">
+                    {m.myTeam ? (
+                      <>
+                        {teamSuffix(m, m.myTeam)} vs {teamSuffix(m, opponent(m.myTeam))}
+                      </>
+                    ) : (
+                      <>
+                        {teamSuffix(m, 'A')} vs {teamSuffix(m, 'B')}
+                      </>
+                    )}
+                  </span>
+                  {hasScore && (
+                    <span className={`match-row-score ${result ? `match-row-result--${result}` : ''}`}>
+                      {m.myTeam ? `${myScore}:${theirScore}` : `${m.score_a}:${m.score_b}`}
+                    </span>
+                  )}
+                  <span className="match-row-meta match-row-date">{formatDate(m.created_at)}</span>
+                </div>
               </a>
             )
           })}
@@ -138,11 +183,15 @@ export function Home({ session, profile }: Props) {
 
           {tournaments.map((t) => (
             <a key={t.id} className="match-row" href={`#/tournament/${t.id}`}>
-              <span className="match-row-name">{t.name || `Турнир #${t.id.slice(0, 8)}`}</span>
-              <span className="match-row-meta">{t.creator?.name ?? '—'}</span>
-              <span className="match-row-meta">{formatDate(t.created_at)}</span>
-              <span className="match-row-meta">4 команды</span>
-              <span className="match-row-status">{TOURNAMENT_STATUS_LABEL[t.status] ?? t.status}</span>
+              <div className="match-row-top">
+                <span className="match-row-name">{t.name || `Турнир #${t.id.slice(0, 8)}`}</span>
+                <span className="match-row-status">{TOURNAMENT_STATUS_LABEL[t.status] ?? t.status}</span>
+              </div>
+              <div className="match-row-bottom">
+                <span className="match-row-meta">{t.creator?.name ?? '—'}</span>
+                <span className="match-row-meta">4 команды</span>
+                <span className="match-row-meta match-row-date">{formatDate(t.created_at)}</span>
+              </div>
             </a>
           ))}
         </div>

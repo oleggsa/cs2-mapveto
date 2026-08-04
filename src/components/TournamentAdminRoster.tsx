@@ -8,6 +8,7 @@ interface Props {
   teams: TournamentTeam[]
   players: TournamentPlayer[]
   onChanged: () => void
+  onClose: () => void
 }
 
 interface ActiveSlot {
@@ -16,9 +17,10 @@ interface ActiveSlot {
 }
 
 /** Super-admin-only panel: clear or directly assign any tournament roster
- * slot, at any tournament stage — not just while still in the lobby. */
-export function TournamentAdminRoster({ tournamentId, teams, players, onChanged }: Props) {
-  const [open, setOpen] = useState(false)
+ * slot, at any tournament stage — not just while still in the lobby. Open
+ * state lives in the parent so its toggle button can sit in the header's
+ * teams-strip row instead of stacking above this panel. */
+export function TournamentAdminRoster({ tournamentId, teams, players, onChanged, onClose }: Props) {
   const [activeSlot, setActiveSlot] = useState<ActiveSlot | null>(null)
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<Profile[]>([])
@@ -79,19 +81,11 @@ export function TournamentAdminRoster({ tournamentId, teams, players, onChanged 
     setResults((data as Profile[]) ?? [])
   }
 
-  if (!open) {
-    return (
-      <button className="btn btn-sm admin-roster-toggle" onClick={() => setOpen(true)}>
-        Управление составами (админ)
-      </button>
-    )
-  }
-
   return (
     <div className="admin-roster-panel">
       <div className="admin-roster-panel-header">
         <h3>Управление составами (админ)</h3>
-        <button className="btn btn-sm" onClick={() => setOpen(false)}>
+        <button className="btn btn-sm" onClick={onClose}>
           Свернуть
         </button>
       </div>

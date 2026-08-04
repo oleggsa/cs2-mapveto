@@ -36,6 +36,12 @@ function matchResult(m: PlayerMatchItem): 'win' | 'loss' | null {
   return my > their ? 'win' : 'loss'
 }
 
+function statusLabel(m: PlayerMatchItem, result: 'win' | 'loss' | null): string {
+  if (m.status === 'done' && result === 'win') return 'Победа'
+  if (m.status === 'done' && result === 'loss') return 'Поражение'
+  return MATCH_STATUS_LABEL[m.status] ?? m.status
+}
+
 export function Player({ playerId }: Props) {
   const { profile, matches, tournaments, loading } = usePlayerProfile(playerId)
   const [section, setSection] = useState<Section>('matches')
@@ -62,7 +68,7 @@ export function Player({ playerId }: Props) {
 
   return (
     <div className="page">
-      <div className="center-card player-header" style={{ margin: '0 auto 32px' }}>
+      <div className="center-card player-header player-header-card">
         <span className="avatar-wrap player-avatar-wrap">
           {profile.avatar_url ? (
             <img className="player-avatar" src={profile.avatar_url} alt="" />
@@ -75,7 +81,13 @@ export function Player({ playerId }: Props) {
         <p>
           {tournaments.length} {pluralizeRu(tournaments.length, 'турнир', 'турнира', 'турниров')} ·{' '}
           {matches.length} {pluralizeRu(matches.length, 'матч', 'матча', 'матчей')}
-          {wins + losses > 0 ? ` · ${wins}W ${losses}L` : ''}
+          {wins + losses > 0 && (
+            <>
+              {' · '}
+              <span className="match-row-result--win">{wins}W</span>{' '}
+              <span className="match-row-result--loss">{losses}L</span>
+            </>
+          )}
         </p>
       </div>
 
@@ -104,19 +116,27 @@ export function Player({ playerId }: Props) {
             const hasScore = myScore != null && theirScore != null
             const result = matchResult(m)
             return (
-              <a key={m.id} className="match-row match-row--player" href={`#/room/${m.id}`}>
-                <span className="match-row-name">{m.name || `Матч #${m.id.slice(0, 8)}`}</span>
-                <span className="match-row-meta">
-                  {m.final_map ? (mapByCode(m.final_map)?.name ?? m.final_map) : '—'}
-                </span>
-                <span className="match-row-meta">
-                  {teamSuffix(m, m.myTeam)} vs {teamSuffix(m, opponent(m.myTeam))}
-                </span>
-                <span className={`match-row-meta ${result ? `match-row-result--${result}` : ''}`}>
-                  {hasScore ? `${myScore}:${theirScore}` : '—'}
-                </span>
-                <span className="match-row-meta">{formatDate(m.created_at)}</span>
-                <span className="match-row-status">{MATCH_STATUS_LABEL[m.status] ?? m.status}</span>
+              <a key={m.id} className={`match-row ${result ? `match-row--${result}` : ''}`} href={`#/room/${m.id}`}>
+                <div className="match-row-top">
+                  <span className="match-row-name">{m.name || `Матч #${m.id.slice(0, 8)}`}</span>
+                  <span className={`match-row-status ${result && m.status === 'done' ? `match-row-status--${result}` : ''}`}>
+                    {statusLabel(m, result)}
+                  </span>
+                </div>
+                <div className="match-row-bottom">
+                  <span className="match-row-meta">
+                    {m.final_map ? (mapByCode(m.final_map)?.name ?? m.final_map) : '—'}
+                  </span>
+                  <span className="match-row-meta">
+                    {teamSuffix(m, m.myTeam)} vs {teamSuffix(m, opponent(m.myTeam))}
+                  </span>
+                  {hasScore && (
+                    <span className={`match-row-score ${result ? `match-row-result--${result}` : ''}`}>
+                      {myScore}:{theirScore}
+                    </span>
+                  )}
+                  <span className="match-row-meta match-row-date">{formatDate(m.created_at)}</span>
+                </div>
               </a>
             )
           })}
@@ -129,11 +149,15 @@ export function Player({ playerId }: Props) {
 
           {tournaments.map((t) => (
             <a key={t.id} className="match-row" href={`#/tournament/${t.id}`}>
-              <span className="match-row-name">{t.name || `Турнир #${t.id.slice(0, 8)}`}</span>
-              <span className="match-row-meta">{t.creator?.name ?? '—'}</span>
-              <span className="match-row-meta">{formatDate(t.created_at)}</span>
-              <span className="match-row-meta">4 команды</span>
-              <span className="match-row-status">{TOURNAMENT_STATUS_LABEL[t.status] ?? t.status}</span>
+              <div className="match-row-top">
+                <span className="match-row-name">{t.name || `Турнир #${t.id.slice(0, 8)}`}</span>
+                <span className="match-row-status">{TOURNAMENT_STATUS_LABEL[t.status] ?? t.status}</span>
+              </div>
+              <div className="match-row-bottom">
+                <span className="match-row-meta">{t.creator?.name ?? '—'}</span>
+                <span className="match-row-meta">4 команды</span>
+                <span className="match-row-meta match-row-date">{formatDate(t.created_at)}</span>
+              </div>
             </a>
           ))}
         </div>

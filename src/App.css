@@ -96,11 +96,10 @@
 }
 
 .match-row {
-  display: grid;
-  grid-template-columns: 1fr auto auto auto auto;
-  gap: 16px;
-  align-items: center;
-  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
   border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--panel);
@@ -111,19 +110,55 @@
   border-color: var(--accent);
 }
 
+.match-row-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .match-row-name {
   font-weight: 600;
+  font-size: 15px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;
+}
+
+.match-row-bottom {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 18px;
 }
 
 .match-row-meta {
   font-size: 13px;
   color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.match-row-meta-label {
+  color: var(--text-dim);
+  opacity: 0.7;
+  margin-right: 4px;
+}
+
+.match-row-score {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--heading);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.match-row-date {
+  margin-left: auto;
 }
 
 .match-row-status {
+  flex-shrink: 0;
   font-size: 12px;
   padding: 4px 10px;
   border-radius: 999px;
@@ -131,24 +166,40 @@
   color: var(--text-dim);
 }
 
-.match-row--player {
-  grid-template-columns: 1fr auto auto auto auto auto;
+.match-row-status--win {
+  background: rgba(46, 213, 115, 0.15);
+  color: var(--pick);
+}
+
+.match-row-status--loss {
+  background: rgba(255, 71, 87, 0.15);
+  color: var(--ban);
 }
 
 .match-row-result--win {
   color: var(--pick);
-  font-weight: 700;
 }
 
 .match-row-result--loss {
   color: var(--ban);
-  font-weight: 700;
+}
+
+.match-row--win {
+  border-left: 3px solid var(--pick);
+}
+
+.match-row--loss {
+  border-left: 3px solid var(--ban);
 }
 
 .player-header {
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+
+.player-header-card {
+  margin: 24px auto 32px;
 }
 
 .player-avatar-wrap {
@@ -173,14 +224,29 @@
   position: relative;
 }
 
-.top-bar {
+.app-header {
   position: fixed;
-  top: 16px;
-  right: 20px;
+  top: 0;
+  left: 0;
+  right: 0;
   z-index: 50;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
+  padding: 14px 20px;
+  background: rgba(20, 21, 26, 0.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(51, 53, 63, 0.7);
+}
+
+.app-header-left,
+.app-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
 }
 
 .create-menu {
@@ -233,10 +299,7 @@
 }
 
 .home-btn {
-  position: fixed;
-  top: 16px;
-  left: 20px;
-  z-index: 50;
+  flex-shrink: 0;
   padding: 8px 14px;
   border-radius: 999px;
   border: 1px solid var(--border);
@@ -375,6 +438,28 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
+}
+
+.my-team-tag {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.my-team-tag--a {
+  color: var(--team-a);
+  border: 1px solid var(--team-a);
+  background: rgba(77, 163, 255, 0.12);
+}
+
+.my-team-tag--b {
+  color: var(--team-b);
+  border: 1px solid var(--team-b);
+  background: rgba(255, 93, 93, 0.12);
 }
 
 .room-title-input {
@@ -1254,6 +1339,10 @@
   margin-bottom: 0;
 }
 
+.tournament-teams-strip .admin-roster-toggle {
+  margin: 0 0 0 auto;
+}
+
 .room-toolbar {
   display: flex;
   align-items: flex-start;
@@ -1540,6 +1629,13 @@
   background: var(--panel-alt);
 }
 
+/* Opening downward would force extra empty space below the table just so
+   the last rows' tooltips have room — open upward for every row instead. */
+.standings-table .team-roster-tooltip {
+  top: auto;
+  bottom: calc(100% + 8px);
+}
+
 .standings-place {
   font-weight: 700;
   color: var(--heading);
@@ -1552,6 +1648,17 @@
 .standings-diff--neg {
   color: var(--ban);
 }
+
+.standings-table tbody tr.standings-row--me {
+  background: rgba(255, 176, 32, 0.12);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+/* No overflow rule here by default: the table fits within .page's max-width
+   on desktop, and constraining overflow at all (even just overflow-x) clips
+   the absolutely-positioned team-roster-tooltip whenever it pops outside
+   this box. The scroll container is only needed once the table gets a
+   min-width forcing it wider than the viewport — see the mobile query. */
 
 /* Confirm-delete modal */
 
@@ -1595,4 +1702,138 @@
   justify-content: flex-end;
   gap: 10px;
   margin-top: 4px;
+}
+
+/* Mobile / responsive */
+
+@media (max-width: 700px) {
+  .app-header {
+    padding: 10px 14px;
+  }
+
+  .page {
+    padding: 76px 16px 48px;
+  }
+
+  .center-card {
+    margin: 32px auto;
+    max-width: 100%;
+    padding: 32px 20px;
+  }
+
+  .user-badge-name {
+    max-width: 90px;
+  }
+
+  .section-tabs,
+  .matches-tabs {
+    flex-wrap: wrap;
+    gap: 8px 12px;
+  }
+
+  /* Room / tournament header */
+  .room-header {
+    flex-direction: column;
+    align-items: stretch;
+    margin-bottom: 20px;
+  }
+
+  .room-header-actions {
+    justify-content: flex-start;
+  }
+
+  .room-title-input {
+    width: 100%;
+  }
+
+  .room-link {
+    max-width: 100%;
+  }
+
+  .tournament-meta {
+    margin-top: 4px;
+  }
+
+  /* Match list rows: score/date no longer pinned right on narrow cards */
+  .match-row-date {
+    margin-left: 0;
+  }
+
+  /* Lobby */
+  .lobby {
+    grid-template-columns: 1fr;
+  }
+
+  /* Veto board */
+  .veto-body {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .map-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .stage-step {
+    font-size: 10px;
+  }
+
+  /* Result screen */
+  .result-body {
+    grid-template-columns: 1fr;
+    margin-top: 24px;
+    gap: 16px;
+  }
+
+  .result-card {
+    width: 100%;
+  }
+
+  .score-form {
+    flex-wrap: wrap;
+  }
+
+  /* Tournament ready-up gate */
+  .gate-body {
+    grid-template-columns: 1fr;
+  }
+
+  /* Tournament team columns / admin roster */
+  .tournament-lobby,
+  .admin-roster-teams {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .standings-table {
+    min-width: 560px;
+  }
+
+  /* Only scope the scroll container to widths where the table actually
+     needs it — see the note on the base .standings-wrap rule above. */
+  .standings-wrap {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+}
+
+@media (max-width: 420px) {
+  .map-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .tournament-lobby,
+  .admin-roster-teams {
+    grid-template-columns: 1fr;
+  }
+
+  .score-input {
+    width: 48px;
+  }
+
+  .create-menu-trigger {
+    padding: 0 14px;
+    font-size: 13px;
+  }
 }
