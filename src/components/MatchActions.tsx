@@ -6,7 +6,7 @@ import type { Match, Profile } from '../types'
 
 interface Props {
   match: Match
-  me: Profile
+  me: Profile | null
   onDeleted: () => void
   onChanged: () => void
 }

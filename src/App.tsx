@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useSession } from './hooks/useSession'
 import { useHashRoute, matchRoomPath, matchPlayerPath, matchTournamentPath } from './hooks/useHashRoute'
-import { supabase } from './lib/supabase'
+import { supabase, steamAuthUrl } from './lib/supabase'
 import { MAP_POOL_CODES } from './config/mapPool'
 import { Home } from './pages/Home'
 import { Room } from './pages/Room'
@@ -10,6 +10,7 @@ import { TournamentRoom } from './pages/TournamentRoom'
 import { UserBadge } from './components/UserBadge'
 import { CreateMenu } from './components/CreateMenu'
 import { CreateTournamentModal } from './components/CreateTournamentModal'
+import { SteamIcon } from './components/SteamIcon'
 import './App.css'
 
 export default function App() {
@@ -53,6 +54,12 @@ export default function App() {
             />
           )}
           {profile && <UserBadge profile={profile} />}
+          {!loading && !profile && !isHome && (
+            <a className="btn btn-steam btn-sm" href={steamAuthUrl(path)}>
+              <SteamIcon size={16} />
+              Войти
+            </a>
+          )}
         </div>
       </div>
 
@@ -83,7 +90,7 @@ export default function App() {
           onLeftRoom={() => navigate('/')}
         />
       ) : playerId ? (
-        <Player playerId={playerId} />
+        <Player playerId={playerId} session={session} />
       ) : (
         <Home session={session} profile={profile} />
       )}

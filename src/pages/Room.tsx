@@ -8,7 +8,6 @@ import { TournamentMatchGate } from '../components/TournamentMatchGate'
 import { MatchAdminRoster } from '../components/MatchAdminRoster'
 import { MatchActions } from '../components/MatchActions'
 import { CancelledMatch } from '../components/CancelledMatch'
-import { steamAuthUrl } from '../lib/supabase'
 import type { Profile } from '../types'
 
 interface Props {
@@ -19,7 +18,7 @@ interface Props {
   onLeftRoom: () => void
 }
 
-export function Room({ roomId, session, profile, sessionLoading, onLeftRoom }: Props) {
+export function Room({ roomId, sessionLoading, profile, onLeftRoom }: Props) {
   const { match, players, rounds, votes, loading, refetch } = useMatch(roomId)
 
   if (loading || sessionLoading) {
@@ -38,24 +37,12 @@ export function Room({ roomId, session, profile, sessionLoading, onLeftRoom }: P
     )
   }
 
-  if (!session || !profile) {
-    return (
-      <div className="center-card">
-        <h1>Матч #{roomId.slice(0, 8)}</h1>
-        <p>Войдите через Steam, чтобы присоединиться.</p>
-        <a className="btn btn-steam" href={steamAuthUrl(roomId)}>
-          Войти через Steam
-        </a>
-      </div>
-    )
-  }
-
   return (
     <div className="page">
       <RoomHeader match={match} players={players} me={profile} roomId={roomId} onChanged={refetch} />
 
       <div className="room-toolbar">
-        {profile.is_admin && <MatchAdminRoster match={match} players={players} onChanged={refetch} />}
+        {profile?.is_admin && <MatchAdminRoster match={match} players={players} onChanged={refetch} />}
         <MatchActions match={match} me={profile} onDeleted={onLeftRoom} onChanged={refetch} />
       </div>
 

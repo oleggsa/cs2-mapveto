@@ -1,15 +1,19 @@
 import { useState } from 'react'
+import type { Session } from '@supabase/supabase-js'
 import { usePlayerProfile } from '../hooks/usePlayerProfile'
 import { FaceitBadge } from '../components/FaceitBadge'
+import { SteamIcon } from '../components/SteamIcon'
 import { mapByCode } from '../config/mapPool'
 import { teamSuffix } from '../lib/teamNames'
 import { TOURNAMENT_STATUS_LABEL } from '../lib/tournamentStatus'
 import { MATCH_STATUS_LABEL } from '../lib/matchStatus'
 import { pluralizeRu } from '../lib/pluralize'
+import { steamAuthUrl } from '../lib/supabase'
 import type { PlayerMatchItem, Team } from '../types'
 
 interface Props {
   playerId: string
+  session: Session | null
 }
 
 type Section = 'matches' | 'tournaments'
@@ -42,7 +46,7 @@ function statusLabel(m: PlayerMatchItem, result: 'win' | 'loss' | null): string 
   return MATCH_STATUS_LABEL[m.status] ?? m.status
 }
 
-export function Player({ playerId }: Props) {
+export function Player({ playerId, session }: Props) {
   const { profile, matches, tournaments, loading } = usePlayerProfile(playerId)
   const [section, setSection] = useState<Section>('matches')
 
@@ -58,6 +62,26 @@ export function Player({ playerId }: Props) {
     return (
       <div className="center-card">
         <h1>Игрок не найден</h1>
+      </div>
+    )
+  }
+
+  if (!session) {
+    return (
+      <div className="center-card player-header player-header-card">
+        <span className="avatar-wrap player-avatar-wrap">
+          {profile.avatar_url ? (
+            <img className="player-avatar" src={profile.avatar_url} alt="" />
+          ) : (
+            <span className="player-avatar" />
+          )}
+        </span>
+        <h1>{profile.name}</h1>
+        <p>Войдите через Steam, чтобы посмотреть матчи и турниры этого игрока.</p>
+        <a className="btn btn-steam" href={steamAuthUrl(`/player/${playerId}`)}>
+          <SteamIcon />
+          Войти через Steam
+        </a>
       </div>
     )
   }

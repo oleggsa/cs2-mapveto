@@ -13,7 +13,7 @@ interface Props {
   tournament: TournamentWithOrganizer
   teams: TournamentTeam[]
   players: TournamentPlayer[]
-  me: Profile
+  me: Profile | null
   tournamentId: string
   onDeleted: () => void
   onChanged: () => void

@@ -5,7 +5,6 @@ import { TournamentHeader } from '../components/TournamentHeader'
 import { TournamentLobby } from '../components/TournamentLobby'
 import { TournamentBracket } from '../components/TournamentBracket'
 import { TournamentAdminRoster } from '../components/TournamentAdminRoster'
-import { steamAuthUrl } from '../lib/supabase'
 import type { Profile } from '../types'
 
 interface Props {
@@ -16,7 +15,7 @@ interface Props {
   onLeftRoom: () => void
 }
 
-export function TournamentRoom({ tournamentId, session, profile, sessionLoading, onLeftRoom }: Props) {
+export function TournamentRoom({ tournamentId, sessionLoading, profile, onLeftRoom }: Props) {
   const { tournament, teams, players, matches, loading, refetch } = useTournament(tournamentId)
   const [showAdminRoster, setShowAdminRoster] = useState(false)
 
@@ -36,19 +35,7 @@ export function TournamentRoom({ tournamentId, session, profile, sessionLoading,
     )
   }
 
-  if (!session || !profile) {
-    return (
-      <div className="center-card">
-        <h1>{tournament.name || `Турнир #${tournamentId.slice(0, 8)}`}</h1>
-        <p>Войдите через Steam, чтобы присоединиться.</p>
-        <a className="btn btn-steam" href={steamAuthUrl('')}>
-          Войти через Steam
-        </a>
-      </div>
-    )
-  }
-
-  const canManageRosters = profile.is_admin && tournament.status !== 'lobby'
+  const canManageRosters = !!profile?.is_admin && tournament.status !== 'lobby'
 
   return (
     <div className="page">

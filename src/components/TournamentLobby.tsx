@@ -9,7 +9,7 @@ interface Props {
   tournament: Tournament
   teams: TournamentTeam[]
   players: TournamentPlayer[]
-  me: Profile
+  me: Profile | null
   onChanged: () => void
 }
 
@@ -58,14 +58,16 @@ export function TournamentLobby({ tournament, teams, players, me, onChanged }: P
         <h2 style={{ color }}>{team.name}</h2>
 
         {slots.map((slot) => {
-          const isMine = slot.player_id === me.id
+          const isMine = !!me && slot.player_id === me.id
           const isEmpty = !slot.player_id
+          const isJoinable = isEmpty && !!me
 
           return (
             <div
               key={slot.slot}
-              className={`slot ${isMine ? 'slot--mine' : ''} ${isEmpty ? 'slot--joinable' : ''}`}
-              onClick={isEmpty ? () => join(team.id, slot.slot) : undefined}
+              className={`slot ${isMine ? 'slot--mine' : ''} ${isJoinable ? 'slot--joinable' : ''}`}
+              onClick={isJoinable ? () => join(team.id, slot.slot) : undefined}
+              title={isEmpty && !me ? 'Войдите через Steam, чтобы присоединиться' : undefined}
             >
               {slot.player_id ? (
                 <>
@@ -123,7 +125,7 @@ export function TournamentLobby({ tournament, teams, players, me, onChanged }: P
       {filled < 20 && (
         <p className="lobby-hint">{filled}/20 — для старта турнира нужно заполнить все составы</p>
       )}
-      {(filled === 20 || me.is_admin) && isOrganizer && (
+      {(filled === 20 || me?.is_admin) && isOrganizer && (
         <div className="lobby-hint">
           <button className="btn btn-primary" onClick={startTournament}>
             {filled === 20 ? 'Начать турнир' : 'Начать турнир (админ, неполные составы)'}

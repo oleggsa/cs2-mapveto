@@ -9,7 +9,7 @@ import type { Match, MatchPlayer, Profile, Team } from '../types'
 interface Props {
   match: Match
   players: MatchPlayer[]
-  me: Profile
+  me: Profile | null
   onChanged: () => void
 }
 
@@ -92,14 +92,16 @@ export function Lobby({ match, players, me, onChanged }: Props) {
         )}
 
         {slots.map((slot) => {
-          const isMine = slot.player_id === me.id
+          const isMine = !!me && slot.player_id === me.id
           const isEmpty = !slot.player_id
+          const isJoinable = isEmpty && !!me
 
           return (
             <div
               key={slot.slot}
-              className={`slot ${isMine ? 'slot--mine' : ''} ${isEmpty ? 'slot--joinable' : ''}`}
-              onClick={isEmpty ? () => join(team, slot.slot) : undefined}
+              className={`slot ${isMine ? 'slot--mine' : ''} ${isJoinable ? 'slot--joinable' : ''}`}
+              onClick={isJoinable ? () => join(team, slot.slot) : undefined}
+              title={isEmpty && !me ? 'Войдите через Steam, чтобы присоединиться' : undefined}
             >
               {slot.player_id ? (
                 <>
@@ -152,7 +154,7 @@ export function Lobby({ match, players, me, onChanged }: Props) {
       {filled < 10 && (
         <p className="lobby-hint">{filled}/10 — для старта вето нужно заполнить все слоты</p>
       )}
-      {(filled === 10 || me.is_admin) && isHost && (
+      {(filled === 10 || me?.is_admin) && isHost && (
         <div className="lobby-hint">
           <button className="btn btn-primary" onClick={startVeto}>
             {filled === 10 ? 'Начать голосование' : 'Начать голосование (админ, неполный состав)'}

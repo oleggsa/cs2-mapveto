@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { steamAuthUrl } from '../lib/supabase'
+import { SteamIcon } from '../components/SteamIcon'
 import { useMatchesList, type StatusFilter } from '../hooks/useMatchesList'
 import { useTournamentsList } from '../hooks/useTournamentsList'
 import { TOURNAMENT_STATUS_LABEL } from '../lib/tournamentStatus'
@@ -59,8 +60,9 @@ export function Home({ session, profile }: Props) {
     return (
       <div className="center-card">
         <h1>CS2 Map Vote</h1>
-        <p>Бан/пик карт в формате Premier: 2 бана, 3 бана, пик карты, пик стороны.</p>
+        <p>Матчи и турниры по CS2: бан-пик карт в формате Premier, составы команд, турнирная сетка и статистика игроков.</p>
         <a className="btn btn-steam" href={steamAuthUrl('')}>
+          <SteamIcon />
           Войти через Steam
         </a>
       </div>

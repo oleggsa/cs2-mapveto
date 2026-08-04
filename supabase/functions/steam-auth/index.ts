@@ -39,12 +39,22 @@ function resolveDest(rawDest: string | null): string {
   return SITE_URL;
 }
 
+// Only ever bounce back into one of the app's known hash routes — this value
+// round-trips through Steam's OpenID redirect, so it must be validated before
+// being reflected into the final redirect's URL fragment.
+const RETURN_PATH_RE = /^\/(room|tournament|player)\/[^/]+$/;
+
+function resolvePath(rawPath: string | null): string {
+  if (!rawPath) return "";
+  return RETURN_PATH_RE.test(rawPath) ? rawPath : "";
+}
+
 function handleLogin(req: Request): Response {
   const url = new URL(req.url);
-  const room = url.searchParams.get("room") ?? "";
+  const path = resolvePath(url.searchParams.get("path"));
   const dest = resolveDest(url.searchParams.get("dest"));
   const returnTo =
-    `${FUNCTION_BASE_URL}?step=callback&room=${encodeURIComponent(room)}&dest=${encodeURIComponent(dest)}`;
+    `${FUNCTION_BASE_URL}?step=callback&path=${encodeURIComponent(path)}&dest=${encodeURIComponent(dest)}`;
 
   const params = new URLSearchParams({
     "openid.ns": "http://specs.openid.net/auth/2.0",
@@ -143,7 +153,7 @@ function backgroundTask(promise: Promise<void>): void {
 
 async function handleCallback(req: Request): Promise<Response> {
   const url = new URL(req.url);
-  const room = url.searchParams.get("room") ?? "";
+  const path = resolvePath(url.searchParams.get("path"));
   const dest = resolveDest(url.searchParams.get("dest"));
 
   let steamId: string;
@@ -199,7 +209,7 @@ async function handleCallback(req: Request): Promise<Response> {
   const redirectUrl = new URL(dest);
   redirectUrl.searchParams.set("token_hash", linkData.properties.hashed_token);
   redirectUrl.searchParams.set("type", "magiclink");
-  redirectUrl.hash = room ? `/room/${room}` : "/";
+  redirectUrl.hash = path || "/";
 
   return Response.redirect(redirectUrl.toString(), 302);
 }

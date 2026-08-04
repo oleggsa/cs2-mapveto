@@ -7,7 +7,7 @@ import type { Match, MatchPlayer, Profile, Team } from '../types'
 interface Props {
   match: Match
   players: MatchPlayer[]
-  me: Profile
+  me: Profile | null
   onChanged: () => void
 }
 
@@ -19,8 +19,8 @@ export function TournamentMatchGate({ match, players, me, onChanged }: Props) {
 
   const captainA = players.find((p) => p.team === 'A' && p.slot === 0)
   const captainB = players.find((p) => p.team === 'B' && p.slot === 0)
-  const isCaptainA = !!captainA?.player_id && captainA.player_id === me.id
-  const isCaptainB = !!captainB?.player_id && captainB.player_id === me.id
+  const isCaptainA = !!captainA?.player_id && captainA.player_id === me?.id
+  const isCaptainB = !!captainB?.player_id && captainB.player_id === me?.id
 
   async function toggleReady() {
     setToggling(true)

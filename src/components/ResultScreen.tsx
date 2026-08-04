@@ -9,7 +9,7 @@ import type { Match, MatchPlayer, Profile, Team } from '../types'
 interface Props {
   match: Match
   players: MatchPlayer[]
-  me: Profile
+  me: Profile | null
   onChanged: () => void
 }
 
@@ -138,7 +138,7 @@ export function ResultScreen({ match, players, me, onChanged }: Props) {
             <>
               <h2 className="result-map-heading">
                 {map?.name ?? match.final_map}
-                {me.is_admin && (
+                {me?.is_admin && (
                   <button className="icon-btn" onClick={startEditingResult} title="Изменить карту и счёт">
                     ✎
                   </button>

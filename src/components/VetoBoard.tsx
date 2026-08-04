@@ -10,7 +10,7 @@ interface Props {
   players: MatchPlayer[]
   rounds: MatchRound[]
   votes: MatchVote[]
-  me: Profile
+  me: Profile | null
   onChanged: () => void
 }
 
@@ -80,13 +80,13 @@ export function VetoBoard({ match, players, rounds, votes, me, onChanged }: Prop
   const pickedMap = rounds.find((r) => r.kind === 'pick_map' && r.resolved)?.results?.[0] ?? null
 
   const myVotesForActiveRound = activeRound
-    ? votes.filter((v) => v.round_id === activeRound.id && v.player_id === me.id)
+    ? votes.filter((v) => v.round_id === activeRound.id && v.player_id === me?.id)
     : []
   const myChoices = new Set(myVotesForActiveRound.map((v) => v.choice))
   const remainingPicks = activeRound ? activeRound.pick_count - myVotesForActiveRound.length : 0
   const canPickMore = !!activeRound && (remainingPicks > 0 || activeRound.pick_count === 1)
   const iAmActingTeam =
-    !!activeRound && players.some((p) => p.team === activeRound.team && p.player_id === me.id)
+    !!me && !!activeRound && players.some((p) => p.team === activeRound.team && p.player_id === me.id)
 
   async function vote(choice: string) {
     if (!activeRound) return

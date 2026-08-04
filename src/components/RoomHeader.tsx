@@ -9,7 +9,7 @@ import type { Match, MatchPlayer, Profile } from '../types'
 interface Props {
   match: Match
   players: MatchPlayer[]
-  me: Profile
+  me: Profile | null
   roomId: string
   onChanged: () => void
 }
@@ -19,7 +19,7 @@ export function RoomHeader({ match, players, me, roomId, onChanged }: Props) {
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState(match.name ?? '')
   const isHistorical = match.status === 'done' || match.status === 'cancelled'
-  const myTeam = players.find((p) => p.player_id === me.id)?.team ?? null
+  const myTeam = players.find((p) => p.player_id === me?.id)?.team ?? null
 
   async function saveName() {
     const { error } = await supabase.rpc('rename_match', { p_match_id: match.id, p_name: name })
