@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import type { MatchListItem } from '../types'
 
-export type StatusFilter = 'active' | 'completed'
+export type StatusFilter = 'all' | 'active' | 'completed'
 export type ScopeFilter = 'all' | 'mine'
 
 export function useMatchesList(statusFilter: StatusFilter, scopeFilter: ScopeFilter, meId: string) {
@@ -22,7 +22,11 @@ export function useMatchesList(statusFilter: StatusFilter, scopeFilter: ScopeFil
       .order('created_at', { ascending: false })
       .limit(fetchLimit)
 
-    query = statusFilter === 'completed' ? query.eq('status', 'done') : query.in('status', ['lobby', 'veto'])
+    if (statusFilter === 'completed') {
+      query = query.in('status', ['done', 'cancelled'])
+    } else if (statusFilter === 'active') {
+      query = query.in('status', ['lobby', 'veto', 'scheduled'])
+    }
 
     const { data: rows } = await query
     const matchIds = (rows ?? []).map((m) => m.id)
@@ -43,7 +47,13 @@ export function useMatchesList(statusFilter: StatusFilter, scopeFilter: ScopeFil
 
     let list = (rows ?? []).map((m) => ({ ...m, filled: filledByMatch.get(m.id) ?? 0 }) as MatchListItem)
     if (scopeFilter === 'mine') {
-      list = list.filter((m) => m.created_by === meId || seatedMatchIds.has(m.id))
+      // A tournament match's created_by is always the tournament's organizer,
+      // not necessarily someone actually playing in that specific game — only
+      // roster seating tells us that. created_by only means "mine" for a
+      // standalone match the viewer created themselves.
+      list = list.filter(
+        (m) => seatedMatchIds.has(m.id) || (!m.tournament_id && m.created_by === meId),
+      )
     }
 
     setMatches(list.slice(0, 10))

@@ -79,6 +79,11 @@ export function ResultScreen({ match, players, me, onChanged }: Props) {
         {members.map((m) => (
           <div key={m.slot} className="roster-row">
             <PlayerLink playerId={m.player_id}>{m.profile?.name ?? '—'}</PlayerLink>
+            {match.tournament_id && m.slot === 0 && m.player_id && (
+              <span className="captain-tag" title="Капитан">
+                👑
+              </span>
+            )}
           </div>
         ))}
       </div>

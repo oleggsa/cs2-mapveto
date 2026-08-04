@@ -4,6 +4,10 @@ import { Lobby } from '../components/Lobby'
 import { VetoBoard } from '../components/VetoBoard'
 import { ResultScreen } from '../components/ResultScreen'
 import { RoomHeader } from '../components/RoomHeader'
+import { TournamentMatchGate } from '../components/TournamentMatchGate'
+import { MatchAdminRoster } from '../components/MatchAdminRoster'
+import { MatchActions } from '../components/MatchActions'
+import { CancelledMatch } from '../components/CancelledMatch'
 import { steamAuthUrl } from '../lib/supabase'
 import type { Profile } from '../types'
 
@@ -48,10 +52,18 @@ export function Room({ roomId, session, profile, sessionLoading, onLeftRoom }: P
 
   return (
     <div className="page">
-      <RoomHeader match={match} me={profile} roomId={roomId} onDeleted={onLeftRoom} onChanged={refetch} />
+      <RoomHeader match={match} me={profile} roomId={roomId} onChanged={refetch} />
+
+      <div className="room-toolbar">
+        {profile.is_admin && <MatchAdminRoster match={match} players={players} onChanged={refetch} />}
+        <MatchActions match={match} me={profile} onDeleted={onLeftRoom} onChanged={refetch} />
+      </div>
 
       {match.status === 'lobby' && (
         <Lobby match={match} players={players} me={profile} onChanged={refetch} />
+      )}
+      {match.status === 'scheduled' && (
+        <TournamentMatchGate match={match} players={players} me={profile} onChanged={refetch} />
       )}
       {match.status === 'veto' && (
         <VetoBoard match={match} players={players} rounds={rounds} votes={votes} me={profile} onChanged={refetch} />
@@ -59,6 +71,7 @@ export function Room({ roomId, session, profile, sessionLoading, onLeftRoom }: P
       {match.status === 'done' && (
         <ResultScreen match={match} players={players} me={profile} onChanged={refetch} />
       )}
+      {match.status === 'cancelled' && <CancelledMatch match={match} players={players} />}
     </div>
   )
 }

@@ -122,6 +122,11 @@ export function VetoBoard({ match, players, rounds, votes, me, onChanged }: Prop
             <div key={m.slot} className="roster-row">
               <span className={`roster-dot ${done && activeRound?.team === team ? 'roster-dot--voted' : ''}`} />
               <PlayerLink playerId={m.player_id}>{m.profile?.name ?? '—'}</PlayerLink>
+              {match.tournament_id && m.slot === 0 && m.player_id && (
+                <span className="captain-tag" title="Капитан">
+                  👑
+                </span>
+              )}
               {activeRound && activeRound.team === team && activeRound.pick_count > 1 && m.player_id && (
                 <span className="roster-progress">
                   {memberVotes}/{activeRound.pick_count}

@@ -11,6 +11,10 @@
   --ban: #ff4757;
   --pick: #2ed573;
   --accent: #ffb020;
+  --bracket-1: #4da3ff;
+  --bracket-2: #ff5d5d;
+  --bracket-3: #2ed573;
+  --bracket-4: #ffb020;
 
   font: 16px/1.5 system-ui, 'Segoe UI', Roboto, sans-serif;
   color-scheme: dark;
@@ -30,7 +34,6 @@ body {
 
 #root {
   min-height: 100vh;
-  overflow: auto;
 }
 
 h1,

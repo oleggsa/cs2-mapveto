@@ -1,18 +1,18 @@
+import { useState } from 'react'
 import { usePlayerProfile } from '../hooks/usePlayerProfile'
 import { FaceitBadge } from '../components/FaceitBadge'
 import { mapByCode } from '../config/mapPool'
 import { teamSuffix } from '../lib/teamNames'
+import { TOURNAMENT_STATUS_LABEL } from '../lib/tournamentStatus'
+import { MATCH_STATUS_LABEL } from '../lib/matchStatus'
+import { pluralizeRu } from '../lib/pluralize'
 import type { PlayerMatchItem, Team } from '../types'
 
 interface Props {
   playerId: string
 }
 
-const STATUS_LABEL: Record<string, string> = {
-  lobby: 'Сбор игроков',
-  veto: 'Идёт вето',
-  done: 'Завершён',
-}
+type Section = 'matches' | 'tournaments'
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleString('ru-RU', {
@@ -37,7 +37,8 @@ function matchResult(m: PlayerMatchItem): 'win' | 'loss' | null {
 }
 
 export function Player({ playerId }: Props) {
-  const { profile, matches, loading } = usePlayerProfile(playerId)
+  const { profile, matches, tournaments, loading } = usePlayerProfile(playerId)
+  const [section, setSection] = useState<Section>('matches')
 
   if (loading) {
     return (
@@ -72,35 +73,71 @@ export function Player({ playerId }: Props) {
         </span>
         <h1>{profile.name}</h1>
         <p>
-          {matches.length} матчей
+          {tournaments.length} {pluralizeRu(tournaments.length, 'турнир', 'турнира', 'турниров')} ·{' '}
+          {matches.length} {pluralizeRu(matches.length, 'матч', 'матча', 'матчей')}
           {wins + losses > 0 ? ` · ${wins}W ${losses}L` : ''}
         </p>
       </div>
 
-      <div className="matches-list">
-        {matches.length === 0 && <p className="lobby-hint">Пока нет сыгранных матчей</p>}
-
-        {matches.map((m) => {
-          const myScore = m.myTeam === 'A' ? m.score_a : m.score_b
-          const theirScore = m.myTeam === 'A' ? m.score_b : m.score_a
-          const hasScore = myScore != null && theirScore != null
-          const result = matchResult(m)
-          return (
-            <a key={m.id} className="match-row match-row--player" href={`#/room/${m.id}`}>
-              <span className="match-row-name">{m.name || `Матч #${m.id.slice(0, 8)}`}</span>
-              <span className="match-row-meta">{m.final_map ? (mapByCode(m.final_map)?.name ?? m.final_map) : '—'}</span>
-              <span className="match-row-meta">
-                {teamSuffix(m, m.myTeam)} vs {teamSuffix(m, opponent(m.myTeam))}
-              </span>
-              <span className={`match-row-meta ${result ? `match-row-result--${result}` : ''}`}>
-                {hasScore ? `${myScore}:${theirScore}` : '—'}
-              </span>
-              <span className="match-row-meta">{formatDate(m.created_at)}</span>
-              <span className="match-row-status">{STATUS_LABEL[m.status] ?? m.status}</span>
-            </a>
-          )
-        })}
+      <div className="section-tabs">
+        <button
+          className={`section-tab ${section === 'matches' ? 'section-tab--active' : ''}`}
+          onClick={() => setSection('matches')}
+        >
+          Матчи
+        </button>
+        <button
+          className={`section-tab ${section === 'tournaments' ? 'section-tab--active' : ''}`}
+          onClick={() => setSection('tournaments')}
+        >
+          Турниры
+        </button>
       </div>
+
+      {section === 'matches' && (
+        <div className="matches-list">
+          {matches.length === 0 && <p className="lobby-hint">Пока нет сыгранных матчей</p>}
+
+          {matches.map((m) => {
+            const myScore = m.myTeam === 'A' ? m.score_a : m.score_b
+            const theirScore = m.myTeam === 'A' ? m.score_b : m.score_a
+            const hasScore = myScore != null && theirScore != null
+            const result = matchResult(m)
+            return (
+              <a key={m.id} className="match-row match-row--player" href={`#/room/${m.id}`}>
+                <span className="match-row-name">{m.name || `Матч #${m.id.slice(0, 8)}`}</span>
+                <span className="match-row-meta">
+                  {m.final_map ? (mapByCode(m.final_map)?.name ?? m.final_map) : '—'}
+                </span>
+                <span className="match-row-meta">
+                  {teamSuffix(m, m.myTeam)} vs {teamSuffix(m, opponent(m.myTeam))}
+                </span>
+                <span className={`match-row-meta ${result ? `match-row-result--${result}` : ''}`}>
+                  {hasScore ? `${myScore}:${theirScore}` : '—'}
+                </span>
+                <span className="match-row-meta">{formatDate(m.created_at)}</span>
+                <span className="match-row-status">{MATCH_STATUS_LABEL[m.status] ?? m.status}</span>
+              </a>
+            )
+          })}
+        </div>
+      )}
+
+      {section === 'tournaments' && (
+        <div className="matches-list">
+          {tournaments.length === 0 && <p className="lobby-hint">Пока нет турниров</p>}
+
+          {tournaments.map((t) => (
+            <a key={t.id} className="match-row" href={`#/tournament/${t.id}`}>
+              <span className="match-row-name">{t.name || `Турнир #${t.id.slice(0, 8)}`}</span>
+              <span className="match-row-meta">{t.creator?.name ?? '—'}</span>
+              <span className="match-row-meta">{formatDate(t.created_at)}</span>
+              <span className="match-row-meta">4 команды</span>
+              <span className="match-row-status">{TOURNAMENT_STATUS_LABEL[t.status] ?? t.status}</span>
+            </a>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

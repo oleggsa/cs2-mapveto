@@ -29,3 +29,8 @@ export function matchPlayerPath(path: string): string | null {
   const m = path.match(/^\/player\/([^/]+)$/)
   return m ? m[1] : null
 }
+
+export function matchTournamentPath(path: string): string | null {
+  const m = path.match(/^\/tournament\/([^/]+)$/)
+  return m ? m[1] : null
+}
