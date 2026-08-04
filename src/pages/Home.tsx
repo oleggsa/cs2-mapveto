@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { steamAuthUrl } from '../lib/supabase'
 import { SteamIcon } from '../components/SteamIcon'
@@ -16,6 +16,38 @@ interface Props {
 }
 
 type Section = 'matches' | 'tournaments'
+
+interface HomeViewState {
+  section: Section
+  status: StatusFilter
+}
+
+function parseStatusFilter(value: string | null): StatusFilter {
+  return value === 'active' || value === 'completed' ? value : 'all'
+}
+
+// Keeps the active tab and its status filter in the hash's query string
+// (e.g. `#/?tab=tournaments&status=completed`) rather than component state
+// alone, so a page refresh — or the back/forward buttons — lands back on
+// whatever was open, instead of always resetting to "Матчи" / "Все". The
+// status filter is scoped to whichever tab is active — switching tabs always
+// starts that tab back on "Все" rather than remembering a filter across tabs.
+function readHomeViewState(): HomeViewState {
+  const query = window.location.hash.replace(/^#/, '').split('?')[1] ?? ''
+  const params = new URLSearchParams(query)
+  return {
+    section: params.get('tab') === 'tournaments' ? 'tournaments' : 'matches',
+    status: parseStatusFilter(params.get('status')),
+  }
+}
+
+function writeHomeViewState(state: HomeViewState) {
+  const params = new URLSearchParams()
+  if (state.section === 'tournaments') params.set('tab', 'tournaments')
+  if (state.status !== 'all') params.set('status', state.status)
+  const query = params.toString()
+  window.location.hash = query ? `/?${query}` : '/'
+}
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleString('ru-RU', {
@@ -48,23 +80,57 @@ function statusLabel(m: MatchListItem, result: 'win' | 'loss' | null): string {
 }
 
 export function Home({ session, profile }: Props) {
-  const [section, setSection] = useState<Section>('matches')
+  const initialView = readHomeViewState()
+  const [section, setSectionState] = useState<Section>(initialView.section)
+  const [statusFilter, setStatusFilterState] = useState<StatusFilter>(
+    initialView.section === 'matches' ? initialView.status : 'all',
+  )
+  const [tournamentStatusFilter, setTournamentStatusFilterState] = useState<StatusFilter>(
+    initialView.section === 'tournaments' ? initialView.status : 'all',
+  )
 
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+  useEffect(() => {
+    const onHashChange = () => {
+      const state = readHomeViewState()
+      setSectionState(state.section)
+      setStatusFilterState(state.section === 'matches' ? state.status : 'all')
+      setTournamentStatusFilterState(state.section === 'tournaments' ? state.status : 'all')
+    }
+    window.addEventListener('hashchange', onHashChange)
+    return () => window.removeEventListener('hashchange', onHashChange)
+  }, [])
+
+  function setSection(next: Section) {
+    setSectionState(next)
+    setStatusFilterState('all')
+    setTournamentStatusFilterState('all')
+    writeHomeViewState({ section: next, status: 'all' })
+  }
+
+  function setStatusFilter(next: StatusFilter) {
+    setStatusFilterState(next)
+    writeHomeViewState({ section: 'matches', status: next })
+  }
+
+  function setTournamentStatusFilter(next: StatusFilter) {
+    setTournamentStatusFilterState(next)
+    writeHomeViewState({ section: 'tournaments', status: next })
+  }
+
   const { matches, loading } = useMatchesList(statusFilter, 'mine', profile?.id ?? '')
-
-  const [tournamentStatusFilter, setTournamentStatusFilter] = useState<StatusFilter>('all')
   const { tournaments, loading: tournamentsLoading } = useTournamentsList(tournamentStatusFilter, profile?.id ?? '')
 
   if (!session || !profile) {
     return (
-      <div className="center-card">
-        <h1>CS2 Map Vote</h1>
-        <p>Матчи и турниры по CS2: бан-пик карт в формате Premier, составы команд, турнирная сетка и статистика игроков.</p>
-        <a className="btn btn-steam" href={steamAuthUrl('')}>
-          <SteamIcon />
-          Войти через Steam
-        </a>
+      <div className="center-page">
+        <div className="center-card">
+          <h1>CS2 Hub</h1>
+          <p>Матчи и турниры по CS2: бан-пик карт в формате Premier, составы команд, турнирная сетка и статистика игроков.</p>
+          <a className="btn btn-steam" href={steamAuthUrl('')}>
+            <SteamIcon />
+            Войти через Steam
+          </a>
+        </div>
       </div>
     )
   }

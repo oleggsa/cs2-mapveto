@@ -15,23 +15,35 @@ interface Standing {
   wins: number
   losses: number
   roundDiff: number
+  remaining: number
 }
 
 const GAMES_PER_TEAM = 3
 
 function computeStandings(teams: TournamentTeam[], matches: TournamentMatch[]): Standing[] {
-  const byId = new Map<string, Standing>(
-    teams.map((team) => [team.id, { team, played: 0, wins: 0, losses: 0, roundDiff: 0 }]),
+  const byId = new Map(
+    teams.map((team) => [team.id, { team, played: 0, wins: 0, losses: 0, roundDiff: 0, resolved: 0 }]),
   )
 
   for (const m of matches) {
-    if (m.score_a == null || m.score_b == null) continue
     const a = byId.get(m.tournament_team_a_id)
     const b = byId.get(m.tournament_team_b_id)
     if (!a || !b) continue
 
+    // A cancelled match will never be played, so it counts against "matches
+    // remaining" the same as a finished one — it just doesn't affect the
+    // win/loss record or round difference.
+    if (m.status === 'cancelled') {
+      a.resolved += 1
+      b.resolved += 1
+      continue
+    }
+    if (m.score_a == null || m.score_b == null) continue
+
     a.played += 1
     b.played += 1
+    a.resolved += 1
+    b.resolved += 1
     a.roundDiff += m.score_a - m.score_b
     b.roundDiff += m.score_b - m.score_a
     if (m.score_a > m.score_b) {
@@ -43,9 +55,9 @@ function computeStandings(teams: TournamentTeam[], matches: TournamentMatch[]): 
     }
   }
 
-  return [...byId.values()].sort(
-    (x, y) => y.wins - x.wins || y.roundDiff - x.roundDiff || x.team.name.localeCompare(y.team.name),
-  )
+  return [...byId.values()]
+    .map(({ resolved, ...s }) => ({ ...s, remaining: GAMES_PER_TEAM - resolved }))
+    .sort((x, y) => y.wins - x.wins || y.roundDiff - x.roundDiff || x.team.name.localeCompare(y.team.name))
 }
 
 function TeamTag({ team, players }: { team: TournamentTeam | undefined; players: TournamentPlayer[] }) {
@@ -148,10 +160,10 @@ export function TournamentBracket({ teams, matches, players, me }: Props) {
             <tr>
               <th>Место</th>
               <th>Команда</th>
-              <th title="Сыграно матчей">И</th>
-              <th title="Победы – поражения">В-П</th>
-              <th title="Разница выигранных и проигранных раундов">Разница раундов</th>
-              <th title="Матчи, которые ещё предстоит сыграть">Осталось</th>
+              <th>Сыграно матчей</th>
+              <th>Победы – поражения</th>
+              <th>Разница раундов</th>
+              <th>Осталось матчей</th>
             </tr>
           </thead>
           <tbody>
@@ -170,7 +182,7 @@ export function TournamentBracket({ teams, matches, players, me }: Props) {
                 >
                   {s.roundDiff > 0 ? `+${s.roundDiff}` : s.roundDiff}
                 </td>
-                <td>{GAMES_PER_TEAM - s.played}</td>
+                <td>{s.remaining}</td>
               </tr>
             ))}
           </tbody>

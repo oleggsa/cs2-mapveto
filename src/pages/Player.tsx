@@ -60,28 +60,36 @@ export function Player({ playerId, session }: Props) {
 
   if (!profile) {
     return (
-      <div className="center-card">
-        <h1>Игрок не найден</h1>
+      <div className="center-page">
+        <div className="center-card">
+          <h1>Игрок не найден</h1>
+          <p>Возможно, ссылка неверна или профиль был удалён.</p>
+          <a className="btn btn-primary" href="#/">
+            На главную
+          </a>
+        </div>
       </div>
     )
   }
 
   if (!session) {
     return (
-      <div className="center-card player-header player-header-card">
-        <span className="avatar-wrap player-avatar-wrap">
-          {profile.avatar_url ? (
-            <img className="player-avatar" src={profile.avatar_url} alt="" />
-          ) : (
-            <span className="player-avatar" />
-          )}
-        </span>
-        <h1>{profile.name}</h1>
-        <p>Войдите через Steam, чтобы посмотреть матчи и турниры этого игрока.</p>
-        <a className="btn btn-steam" href={steamAuthUrl(`/player/${playerId}`)}>
-          <SteamIcon />
-          Войти через Steam
-        </a>
+      <div className="center-page">
+        <div className="center-card player-header player-header-card">
+          <span className="avatar-wrap player-avatar-wrap">
+            {profile.avatar_url ? (
+              <img className="player-avatar" src={profile.avatar_url} alt="" />
+            ) : (
+              <span className="player-avatar" />
+            )}
+          </span>
+          <h1>{profile.name}</h1>
+          <p>Войдите через Steam, чтобы посмотреть матчи и турниры этого игрока.</p>
+          <a className="btn btn-steam" href={steamAuthUrl(`/player/${playerId}`)}>
+            <SteamIcon />
+            Войти через Steam
+          </a>
+        </div>
       </div>
     )
   }

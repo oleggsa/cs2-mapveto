@@ -31,8 +31,14 @@ export function Room({ roomId, sessionLoading, profile, onLeftRoom }: Props) {
 
   if (!match) {
     return (
-      <div className="center-card">
-        <h1>Матч не найден</h1>
+      <div className="center-page">
+        <div className="center-card">
+          <h1>Матч не найден</h1>
+          <p>Возможно, ссылка неверна или матч был удалён.</p>
+          <a className="btn btn-primary" href="#/">
+            На главную
+          </a>
+        </div>
       </div>
     )
   }
@@ -58,7 +64,9 @@ export function Room({ roomId, sessionLoading, profile, onLeftRoom }: Props) {
       {match.status === 'done' && (
         <ResultScreen match={match} players={players} me={profile} onChanged={refetch} />
       )}
-      {match.status === 'cancelled' && <CancelledMatch match={match} players={players} />}
+      {match.status === 'cancelled' && (
+        <CancelledMatch match={match} players={players} me={profile} onChanged={refetch} />
+      )}
     </div>
   )
 }

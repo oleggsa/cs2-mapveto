@@ -4,9 +4,24 @@
   padding: 72px 20px 64px;
 }
 
+/* Vertically centers a lone .center-card in the viewport (login prompts,
+   "not found" states) — used instead of a fixed top margin so it sits in the
+   middle of the screen regardless of viewport height. */
+.center-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.center-page .player-header-card {
+  margin: 0;
+}
+
 .center-card {
   max-width: 420px;
-  margin: 80px auto;
+  margin: 0 auto;
   text-align: center;
   background: var(--panel);
   border: 1px solid var(--border);
@@ -546,7 +561,9 @@
 
 .room-link-copied {
   position: absolute;
-  top: -30px;
+  /* Below the trigger, not above — this control usually sits right under the
+     fixed app header, and a tooltip popping upward would render underneath it. */
+  top: calc(100% + 8px);
   right: 0;
   background: var(--pick);
   color: #06240f;
@@ -555,9 +572,10 @@
   padding: 4px 10px;
   border-radius: 6px;
   opacity: 0;
-  transform: translateY(4px);
+  transform: translateY(-4px);
   transition: opacity 0.15s, transform 0.15s;
   pointer-events: none;
+  z-index: 10;
 }
 
 .room-link-copied--show {
@@ -1006,6 +1024,22 @@
 
 .roster-row a:hover {
   text-decoration: underline;
+}
+
+.roster-player-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.roster-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--border);
+  object-fit: cover;
+  flex-shrink: 0;
 }
 
 /* Tournament match gate (captain ready-up) */
@@ -1603,7 +1637,7 @@
 
 .standings-table {
   width: 100%;
-  max-width: 720px;
+  max-width: 920px;
   margin: 0 auto;
   border-collapse: collapse;
   font-size: 14px;
@@ -1622,7 +1656,7 @@
   letter-spacing: 0.05em;
   color: var(--text-dim);
   font-weight: 600;
-  cursor: help;
+  white-space: nowrap;
 }
 
 .standings-table tbody tr:first-child {
@@ -1716,7 +1750,6 @@
   }
 
   .center-card {
-    margin: 32px auto;
     max-width: 100%;
     padding: 32px 20px;
   }

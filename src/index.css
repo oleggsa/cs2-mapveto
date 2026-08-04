@@ -34,6 +34,10 @@ body {
 
 #root {
   min-height: 100vh;
+  /* Establishes a new block-formatting context so a centered card's top
+     margin (e.g. .center-card) can't collapse through #root and inflate the
+     document past the viewport, producing a phantom scrollbar. */
+  display: flow-root;
 }
 
 h1,

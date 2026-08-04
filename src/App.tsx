@@ -23,6 +23,10 @@ export default function App() {
   const playerId = matchPlayerPath(path)
   const tournamentId = matchTournamentPath(path)
   const isHome = !roomId && !playerId && !tournamentId
+  // Nothing lives in the header on the home page for a logged-out visitor
+  // (no "← Главная", no create menu, no user badge) — rendering it anyway
+  // just shows an empty bar, so skip it entirely in that case.
+  const showHeader = !isHome || !!profile
 
   async function createMatch() {
     setCreatingMatch(true)
@@ -37,31 +41,33 @@ export default function App() {
 
   return (
     <>
-      <div className="app-header">
-        <div className="app-header-left">
-          {(roomId || playerId || tournamentId) && (
-            <button className="home-btn" onClick={() => navigate('/')} title="На главную">
-              ← Главная
-            </button>
-          )}
+      {showHeader && (
+        <div className="app-header">
+          <div className="app-header-left">
+            {(roomId || playerId || tournamentId) && (
+              <button className="home-btn" onClick={() => navigate('/')} title="На главную">
+                ← Главная
+              </button>
+            )}
+          </div>
+          <div className="app-header-right">
+            {profile && isHome && (
+              <CreateMenu
+                onSelectMatch={createMatch}
+                onSelectTournament={() => setShowTournamentModal(true)}
+                disabled={creatingMatch}
+              />
+            )}
+            {profile && <UserBadge profile={profile} />}
+            {!loading && !profile && !isHome && (
+              <a className="btn btn-steam btn-sm" href={steamAuthUrl(path)}>
+                <SteamIcon size={16} />
+                Войти
+              </a>
+            )}
+          </div>
         </div>
-        <div className="app-header-right">
-          {profile && isHome && (
-            <CreateMenu
-              onSelectMatch={createMatch}
-              onSelectTournament={() => setShowTournamentModal(true)}
-              disabled={creatingMatch}
-            />
-          )}
-          {profile && <UserBadge profile={profile} />}
-          {!loading && !profile && !isHome && (
-            <a className="btn btn-steam btn-sm" href={steamAuthUrl(path)}>
-              <SteamIcon size={16} />
-              Войти
-            </a>
-          )}
-        </div>
-      </div>
+      )}
 
       {showTournamentModal && (
         <CreateTournamentModal
