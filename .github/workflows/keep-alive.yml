@@ -1,0 +1,19 @@
+name: Supabase keep-alive
+
+on:
+  schedule:
+    # Daily — Supabase pauses free projects after 7 days of inactivity; daily gives margin
+    # in case a scheduled run is delayed or skipped by GitHub.
+    - cron: "0 6 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST API
+        run: |
+          curl -sf "${{ secrets.VITE_SUPABASE_URL }}/rest/v1/profiles?select=id&limit=1&_=$(date +%s)" \
+            -H "apikey: ${{ secrets.VITE_SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.VITE_SUPABASE_ANON_KEY }}" \
+            -H "Cache-Control: no-cache"
