@@ -13,7 +13,11 @@ jobs:
     steps:
       - name: Ping Supabase REST API
         run: |
-          curl -sf "${{ secrets.VITE_SUPABASE_URL }}/rest/v1/profiles?select=id&limit=1&_=$(date +%s)" \
-            -H "apikey: ${{ secrets.VITE_SUPABASE_ANON_KEY }}" \
-            -H "Authorization: Bearer ${{ secrets.VITE_SUPABASE_ANON_KEY }}" \
+          echo "URL length: ${#SUPABASE_URL}, KEY length: ${#SUPABASE_ANON_KEY}"
+          curl -s -w "\nHTTP_STATUS:%{http_code}\n" "$SUPABASE_URL/rest/v1/profiles?select=id&limit=1&_=$(date +%s)" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
             -H "Cache-Control: no-cache"
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
